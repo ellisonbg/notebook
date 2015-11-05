@@ -606,6 +606,15 @@ define(function (require) {
         }
     };
 
+    Notebook.prototype.get_anchor_index = function () {
+        var result = null;
+        this.get_cell_elements().filter(function (index) {
+            if ($(this).data("cell").anchor === true) {
+                result = index;
+            }
+        });
+        return result;
+    };
     /**
      * Get the index of the currently selected cell.
      *
@@ -720,6 +729,7 @@ define(function (require) {
         }));
     };
 
+
     /**
      * Extend the selected range
      *
@@ -751,13 +761,38 @@ define(function (require) {
 
     // Cell selection.
 
+    Notebook.prototype.select_head_only_delta = function(delta) {
+        var index = this.get_selected_index();
+        // do not move anchor
+        return this.select(index+delta, false);
+    };
+
+
+    Notebook.prototype.update_soft_selection = function(){
+        var i1 = this.get_selected_index();
+        var i2 = this.get_anchor_index();
+        var low  = Math.min(i1, i2);
+        var high = Math.max(i1, i2);
+        console.warn(low, high, i1, i2)
+        this.get_cells().map(function(cell, index, all){
+            if( low < index && index < high ){
+                cell.soft_select();
+            } else {
+                cell.soft_unselect();
+            }
+        })
+
+
+    }
     /**
      * Programmatically select a cell.
      * 
      * @param {integer} index - A cell's index
      * @return {Notebook} This notebook
      */
-    Notebook.prototype.select = function (index) {
+    Notebook.prototype.select = function (index, moveanchor) {
+        moveanchor = (moveanchor===undefined)? true : moveanchor;
+
         if (this.is_valid_cell_index(index)) {
             var sindex = this.get_selected_index();
             if (sindex !== null && index !== sindex) {
@@ -766,10 +801,15 @@ define(function (require) {
                 if (this.mode !== 'command') {
                     this.command_mode();
                 }
-                this.get_cell(sindex).unselect();
+                this.get_cell(sindex).unselect(moveanchor);
+                console.error("unselected sindex, moveanchor is", moveanchor);
+                if(moveanchor){
+                    this.get_cell(this.get_anchor_index()).unselect(true); 
+                }
             }
             var cell = this.get_cell(index);
-            cell.select();
+            console.info('moveanchor is', moveanchor)
+            cell.select(moveanchor);
             this.update_marked_status();
             if (cell.cell_type === 'heading') {
                 this.events.trigger('selected_cell_type_changed.Notebook',
@@ -781,6 +821,7 @@ define(function (require) {
                 );
             }
         }
+        this.update_soft_selection();
         return this;
     };
 
@@ -789,9 +830,9 @@ define(function (require) {
      *
      * @return {Notebook} This notebook
      */
-    Notebook.prototype.select_next = function () {
+    Notebook.prototype.select_next = function (anchor) {
         var index = this.get_selected_index();
-        this.select(index+1);
+        this.select(index+1, anchor);
         return this;
     };
 
@@ -800,9 +841,9 @@ define(function (require) {
      *
      * @return {Notebook} This notebook
      */
-    Notebook.prototype.select_prev = function () {
+    Notebook.prototype.select_prev = function (anchor) {
         var index = this.get_selected_index();
-        this.select(index-1);
+        this.select(index-1, anchor);
         return this;
     };
 

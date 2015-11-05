@@ -163,7 +163,7 @@ define(function(require){
             handler : function (env) {
                 var index = env.notebook.get_selected_index();
                 if (index !== 0 && index !== null) {
-                    env.notebook.select_prev();
+                    env.notebook.select_prev(true);
                     env.notebook.focus_cell();
                 }
             }
@@ -174,7 +174,7 @@ define(function(require){
             handler : function (env) {
                 var index = env.notebook.get_selected_index();
                 if (index !== (env.notebook.ncells()-1) && index !== null) {
-                    env.notebook.select_next();
+                    env.notebook.select_next(true);
                     env.notebook.focus_cell();
                 }
             }
@@ -183,14 +183,16 @@ define(function(require){
             help: 'extend marked cells above',
             help_index : 'dc',
             handler : function (env) {
-                env.notebook.extend_marked(-1);
+                //env.notebook.extend_marked(-1);
+                env.notebook.select_head_only_delta(-1)
             }
         },
         'extend-marked-cells-below' : {
             help: 'extend marked cells below',
             help_index : 'dd',
             handler : function (env) {
-                env.notebook.extend_marked(1);
+                env.notebook.select_head_only_delta(1)
+                //env.notebook.extend_marked(1);
             }
         },
         'cut-cell' : {
@@ -229,7 +231,7 @@ define(function(require){
             help_index : 'ec',
             handler : function (env) {
                 env.notebook.insert_cell_above();
-                env.notebook.select_prev();
+                env.notebook.select_prev(true);
                 env.notebook.focus_cell();
             }
         },
@@ -239,7 +241,7 @@ define(function(require){
             help_index : 'ed',
             handler : function (env) {
                 env.notebook.insert_cell_below();
-                env.notebook.select_next();
+                env.notebook.select_next(true);
                 env.notebook.focus_cell();
             }
         },
@@ -481,7 +483,7 @@ define(function(require){
                         event.preventDefault();
                     }
                     env.notebook.command_mode();
-                    env.notebook.select_prev();
+                    env.notebook.select_prev(true);
                     env.notebook.edit_mode();
                     cm = env.notebook.get_selected_cell().code_mirror;
                     cm.setCursor(cm.lastLine(), 0);
@@ -498,7 +500,7 @@ define(function(require){
                         event.preventDefault();
                     }
                     env.notebook.command_mode();
-                    env.notebook.select_next();
+                    env.notebook.select_next(true);
                     env.notebook.edit_mode();
                     var cm = env.notebook.get_selected_cell().code_mirror;
                     cm.setCursor(0, 0);

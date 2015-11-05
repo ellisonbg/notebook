@@ -55,6 +55,8 @@ define([
         
         this.placeholder = config.placeholder || '';
         this.selected = false;
+        this.anchor = false;
+        this.soft_selected = false;
         this.rendered = false;
         this.mode = 'command';
 
@@ -105,6 +107,7 @@ define([
             this.element.data("cell", this);
             this.bind_events();
             this.init_classes();
+            this.soft_unselect()
         }
     };
 
@@ -246,12 +249,34 @@ define([
         utils.typeset(this.element);
     };
 
+    Cell.prototype.soft_select = function(){
+        this.soft_selected = true;
+        this.element.addClass('jupyter-soft-selected');
+        console.error('calling soft select');
+
+    }
+
+    Cell.prototype.soft_unselect = function(){
+        this.soft_selected = false;
+        this.element.removeClass('jupyter-soft-selected')
+        console.info('calling soft unselect')
+
+    }
+
     /**
      * handle cell level logic when a cell is selected
      * @method select
      * @return is the action being taken
      */
-    Cell.prototype.select = function () {
+    Cell.prototype.select = function (moveanchor) {
+        // if anchor is true, set the move the anchor
+        moveanchor = (moveanchor === undefined)? true:moveanchor;
+        console.log('in cell select moveanchor is ', moveanchor)
+        if(moveanchor){
+            this.element.addClass('jupyter-anchor');
+            this.anchor=true;
+        }
+
         if (!this.selected) {
             this.element.addClass('selected');
             this.element.removeClass('unselected');
@@ -265,10 +290,16 @@ define([
     /**
      * handle cell level logic when the cell is unselected
      * @method unselect
-     * @param {bool} leave_selected - true to move cursor away and extend selection
      * @return is the action being taken
      */
-    Cell.prototype.unselect = function (leave_selected) {
+    Cell.prototype.unselect = function (moveanchor) {
+        // if anchor is true, remove the anchor
+        moveanchor = (moveanchor === undefined)? true:moveanchor;
+        console.error('in cell unselect moveanchor is ', moveanchor)
+        if (moveanchor){
+            this.anchor = false
+            this.element.removeClass('jupyter-anchor');
+        }
         if (this.selected) {
             this.element.addClass('unselected');
             this.element.removeClass('selected');
