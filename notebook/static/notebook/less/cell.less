@@ -5,18 +5,58 @@
     padding-left: @cell_padding - @n;
 }
 
+
+
+div.cell.jupyter-soft-selected {
+    border-color: @border_color;
+    border-style: solid;
+
+    &.marked {
+        ._marked_style(3px);
+        border-style: double;
+    }
+}
+
+
+div.cell.jupyter-soft-selected {
+    border-bottom:transparent thin solid;
+    border-top:transparent thin solid;
+
+    &.selected {
+        ._marked_style(3px);
+    }
+    &.selected.marked {
+        ._marked_style(5px);
+    }
+}
+
+
 div.cell {
     border: @cell_border_width solid transparent;
     .vbox();
     .corner-all();
     .border-box-sizing();
-    border-width: @cell_border_width;
+    border-top-width: @cell_border_width;
+    border-bottom-width: @cell_border_width;
+    border-right-width: @cell_border_width;
+    ._marked_style(@cell_border_width);
     border-style: solid;
-
-    &.marked {
-        ._marked_style(3px);
+    &.marked.soft-selected {
         border-left-color: @marked_border_color_light;
+    }
 
+    &.jupyter-soft-selected.first {
+        border-top-color:@border_color;
+    }
+    &.jupyter-soft-selected.last {
+        border-bottom-color:@border_color;
+    }
+
+
+    &.marked{
+        ._marked_style(5px);
+        border-left-color: @marked_border_color_light;
+        border-style: double;
         /* Don't border the cells when printing */
         @media print {
             border-color: transparent;
@@ -24,9 +64,8 @@ div.cell {
     }
 
     &.selected {
-        border-color: @border_color;
         border-left-color: @marked_border_color;
-        ._marked_style(2px);
+        ._marked_style(4px);
 
         &.marked {
           ._marked_style(4px);
