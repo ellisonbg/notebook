@@ -249,16 +249,26 @@ define([
         utils.typeset(this.element);
     };
 
-    Cell.prototype.soft_select = function(){
+    Cell.prototype.soft_select = function(first, last){
         this.soft_selected = true;
         this.element.addClass('jupyter-soft-selected');
         console.error('calling soft select');
+        if(first){
+            this.element.addClass('first');
+        } else {
+            this.element.removeClass('first');
+        }
+        if(last){
+            this.element.addClass('last');
+        } else {
+            this.element.removeClass('last');
+        }
 
     }
 
     Cell.prototype.soft_unselect = function(){
         this.soft_selected = false;
-        this.element.removeClass('jupyter-soft-selected')
+        this.element.removeClass('jupyter-soft-selected first last')
         console.info('calling soft unselect')
 
     }

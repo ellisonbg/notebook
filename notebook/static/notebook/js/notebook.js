@@ -677,7 +677,7 @@ define(function (require) {
      */
     Notebook.prototype.get_marked_cells = function(cells) {
         cells = cells || this.get_cells();
-        return cells.filter(function(cell) { return (cell.marked || cell.selected); });
+        return cells.filter(function(cell) { return (cell.marked || cell.selected || cell.soft_selected); });
     };
     
     /**
@@ -780,8 +780,8 @@ define(function (require) {
         var high = Math.max(i1, i2);
         console.warn(low, high, i1, i2)
         this.get_cells().map(function(cell, index, all){
-            if( low < index && index < high ){
-                cell.soft_select();
+            if( low <= index && index <= high ){
+                cell.soft_select(index == low, index == high);
             } else {
                 cell.soft_unselect();
             }
