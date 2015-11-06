@@ -582,6 +582,11 @@ define(function (require) {
         return i;
     };
 
+
+    Notebook.prototype.get_cell_selection = function () {
+        return this.get_cells().filter(function(cell, index){ return cell.selected || cell.soft_selected || cell.anchor})
+    };
+
     /**
      * Get the currently selected cell.
      * 

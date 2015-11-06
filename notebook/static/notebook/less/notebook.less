@@ -6,12 +6,18 @@
     }
 }
 
-.jupyter-anchor{
-    background-color: cyan;
+div.cell.jupyter-anchor{
+    border: solid thin purple;
+    &.marked {
+        border-left-width:3px;
+    }
 }
 
 div.cell.jupyter-soft-selected {
-    border: purple thin solid;
+    border: solid thin gray;
+    &.marked {
+        border-left-width:3px;
+    }
 }
 
 #ipython-main-app {

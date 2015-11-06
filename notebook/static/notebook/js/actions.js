@@ -408,9 +408,23 @@ define(function(require){
             icon: 'fa-check',
             handler : function(env){
                 // Use bitwise logic to toggle the marked state.
-                env.notebook.get_selected_cell().marked ^= true;
+                console.warn('toggle')
+                env.notebook.get_cell_selection().map(function(cell, index){cell.marked ^= true});
             }
         },
+       'mark-selected-cells': {
+            handler : function(env){
+                // Use bitwise logic to toggle the marked state.
+                env.notebook.get_cell_selection().map(function(cell, index){cell.marked = true});
+            }
+        },
+        'unmark-selected-cells': {
+            handler : function(env){
+                // Use bitwise logic to toggle the marked state.
+                env.notebook.get_cell_selection().map(function(cell, index){cell.marked = false});
+            }
+        },
+
         'unmark-all-cells': {
             help_index : 'ck',
             help : 'unmark all cells',
