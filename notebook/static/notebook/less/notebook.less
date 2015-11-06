@@ -29,6 +29,12 @@ div.cell.jupyter-soft-selected {
     border-bottom:transparent thin solid;
     border-top:transparent thin solid;
 
+    &.selected {
+        border-left-width:2px;
+    }
+    &.selected.marked {
+        border-left-width:4px;
+    }
 }
 
 div.cell.jupyter-soft-selected.first {
