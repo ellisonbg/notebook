@@ -408,7 +408,6 @@ define(function(require){
             icon: 'fa-check',
             handler : function(env){
                 // Use bitwise logic to toggle the marked state.
-                console.warn('toggle')
                 env.notebook.get_cell_selection().map(function(cell, index){cell.marked ^= true});
             }
         },

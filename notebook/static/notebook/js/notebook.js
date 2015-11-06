@@ -778,7 +778,6 @@ define(function (require) {
         var i2 = this.get_anchor_index();
         var low  = Math.min(i1, i2);
         var high = Math.max(i1, i2);
-        console.warn(low, high, i1, i2)
         this.get_cells().map(function(cell, index, all){
             if( low <= index && index <= high ){
                 cell.soft_select(index == low, index == high);
@@ -807,13 +806,11 @@ define(function (require) {
                     this.command_mode();
                 }
                 this.get_cell(sindex).unselect(moveanchor);
-                console.error("unselected sindex, moveanchor is", moveanchor);
                 if(moveanchor){
                     this.get_cell(this.get_anchor_index()).unselect(true); 
                 }
             }
             var cell = this.get_cell(index);
-            console.info('moveanchor is', moveanchor)
             cell.select(moveanchor);
             this.update_marked_status();
             if (cell.cell_type === 'heading') {

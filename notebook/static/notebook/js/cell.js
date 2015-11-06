@@ -21,6 +21,8 @@ define([
     "use strict";
     
     var overlayHack = CodeMirror.scrollbarModel.native.prototype.overlayHack;
+
+    var _SOFT_SELECTION_CLASS = 'jupyter-soft-selected';
     
     CodeMirror.scrollbarModel.native.prototype.overlayHack = function () {
         overlayHack.apply(this, arguments);
@@ -56,7 +58,6 @@ define([
         this.placeholder = config.placeholder || '';
         this.selected = false;
         this.anchor = false;
-        this.soft_selected = false;
         this.rendered = false;
         this.mode = 'command';
 
@@ -250,9 +251,7 @@ define([
     };
 
     Cell.prototype.soft_select = function(first, last){
-        this.soft_selected = true;
-        this.element.addClass('jupyter-soft-selected');
-        console.error('calling soft select');
+        this.element.addClass(_SOFT_SELECTION_CLASS);
         if(first){
             this.element.addClass('first');
         } else {
@@ -267,10 +266,7 @@ define([
     }
 
     Cell.prototype.soft_unselect = function(){
-        this.soft_selected = false;
-        this.element.removeClass('jupyter-soft-selected first last')
-        console.info('calling soft unselect')
-
+        this.element.removeClass(_SOFT_SELECTION_CLASS+' first last')
     }
 
     /**
@@ -281,7 +277,6 @@ define([
     Cell.prototype.select = function (moveanchor) {
         // if anchor is true, set the move the anchor
         moveanchor = (moveanchor === undefined)? true:moveanchor;
-        console.log('in cell select moveanchor is ', moveanchor)
         if(moveanchor){
             this.element.addClass('jupyter-anchor');
             this.anchor=true;
@@ -305,7 +300,6 @@ define([
     Cell.prototype.unselect = function (moveanchor) {
         // if anchor is true, remove the anchor
         moveanchor = (moveanchor === undefined)? true:moveanchor;
-        console.error('in cell unselect moveanchor is ', moveanchor)
         if (moveanchor){
             this.anchor = false
             this.element.removeClass('jupyter-anchor');
@@ -343,6 +337,19 @@ define([
             }
         }
     });
+
+    /**
+     * Whether or not the cell is implicitly selected.
+     * @return {boolean}
+     */
+    Object.defineProperty(Cell.prototype, 'soft_selected', {
+        get: function() {
+            return this.element.hasClass(_SOFT_SELECTION_CLASS);
+        },
+    });
+
+
+
 
     /**
      * should be overritten by subclass
