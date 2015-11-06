@@ -5,93 +5,129 @@
     padding-left: @cell_padding - @n;
 }
 
-
-
-div.cell.jupyter-soft-selected {
-    border-color: @border_color;
-    border-style: solid;
-
-    &.marked {
-        ._marked_style(3px);
-        border-style: double;
-    }
-}
-
-
-div.cell.jupyter-soft-selected {
-    border-bottom:transparent thin solid;
-    border-top:transparent thin solid;
-
-    &.selected {
-        ._marked_style(3px);
-    }
-    &.selected.marked {
-        ._marked_style(5px);
-    }
+._arrow(@color, @size){
+    border: @size solid @color;
+    border-bottom-color:transparent;
+    border-top-color:transparent;
+    border-right-color:transparent;
+    margin-top: -1*@size;
+    margin-left: -8px;
+    top: 50%;
+    border-image-source: initial;
+    border-image-slice: initial;
+    border-image-width: initial;
+    border-image-outset: initial;
+    border-image-repeat: initial;
+    content: " ";
+    height: @size;
+    width: -2*@size;
+    position: absolute;
+    pointer-events: none;
 }
 
 
 div.cell {
-    border: @cell_border_width solid transparent;
+    position:relative;
     .vbox();
     .corner-all();
     .border-box-sizing();
-    border-top-width: @cell_border_width;
-    border-bottom-width: @cell_border_width;
-    border-right-width: @cell_border_width;
-    ._marked_style(@cell_border_width);
+
+    border-width: @border_width;
     border-style: solid;
-    &.marked.soft-selected {
-        border-left-color: @marked_border_color_light;
-    }
-
-    &.jupyter-soft-selected.first {
-        border-top-color:@border_color;
-    }
-    &.jupyter-soft-selected.last {
-        border-bottom-color:@border_color;
-    }
-
-
-    &.marked{
-        ._marked_style(5px);
-        border-left-color: @marked_border_color_light;
-        border-style: double;
-        /* Don't border the cells when printing */
-        @media print {
-            border-color: transparent;
-        }
-    }
-
-    &.selected {
-        border-left-color: @marked_border_color;
-        ._marked_style(4px);
-
-        &.marked {
-          ._marked_style(4px);
-        }
-
-        /* Don't border the cells when printing */
-        @media print {
-            border-color: transparent;
-        }
-    }
-
-    .edit_mode &.selected {
-        border-color: @edit_mode_border_color;
-
-        /* Don't border the cells when printing */
-        @media print {
-            border-color: transparent;
-        }
-    }
+    border-color: transparent;
+    border-radius: 0;
 
     width: 100%;
     padding: @_cell_padding_minus_border;
     /* This acts as a spacer between cells, that is outside the border */
     margin: 0px;
     outline: none;
+   
+    ._marked_style(@cell_border_width);
+
+
+    &.marked {
+        border-left-color: @marked_border_color_light;
+        ._marked_style(2px);
+        &:before {
+            ._arrow(@marked_border_color_light, 7px);
+        }
+
+    }
+
+    &.jupyter-soft-selected {
+        border-left-color: @marked_border_color_light;
+        &.first {border-top-color:   @border_color}
+        &.last  {border-bottom-color:@border_color}
+        border-right-color: @border_color;
+
+        ._marked_style(4px);
+    }
+
+    &.selected {
+        border-left-color: @marked_border_color;
+        &:before {
+            border-left-color:@marked_border_color
+        }
+        ._marked_style(5px);
+        &.marked {
+            &:before{
+               ._arrow(@marked_border_color, 10px);
+            }
+        }
+    }
+
+    .edit_mode &.selected{
+        border-color: @edit_mode_border_color;
+
+        &:before {
+            border-left-color:@edit_mode_border_color
+        }
+
+
+        /* Don't border the cells when printing */
+        @media print {
+            border-color: transparent;
+        }
+
+
+    }
+
 }
+
+
+//div.cell {
+//    &.marked.soft-selected {
+//        border-left-color: @marked_border_color_light;
+//    }
+//
+//    &.marked{
+//        ._marked_style(5px);
+//        border-left-color: @marked_border_color_light;
+//        border-style: double;
+//        /* Don't border the cells when printing */
+//        @media print {
+//            border-color: transparent;
+//        }
+//    }
+//
+//    &.selected {
+//        border-left-color: @marked_border_color;
+//        ._marked_style(4px);
+//
+//        &.marked {
+//          ._marked_style(4px);
+//        }
+//
+//        /* Don't border the cells when printing */
+//        @media print {
+//            border-color: transparent;
+//        }
+//    }
+//
+//
+//
+//}
 
 .prompt {
     /* This needs to be wide enough for 3 digit prompt numbers: In[100]: */
