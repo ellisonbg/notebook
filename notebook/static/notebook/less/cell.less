@@ -23,6 +23,9 @@
     width: -2*@size;
     position: absolute;
     pointer-events: none;
+    @media print {
+        display:none;
+    }
 }
 
 
@@ -35,7 +38,6 @@ div.cell {
     border-width: @border_width;
     border-style: solid;
     border-color: transparent;
-    border-radius: 0;
 
     width: 100%;
     padding: @_cell_padding_minus_border;
@@ -52,8 +54,11 @@ div.cell {
         &:before {
             ._arrow(@marked_border_color_light, 7px);
         }
+        @media print {
+            border-color: transparent;
+        }
 
-    }
+    };
 
     &.jupyter-soft-selected {
         border-left-color: @marked_border_color_light;
@@ -62,18 +67,25 @@ div.cell {
         border-right-color: @border_color;
 
         ._marked_style(4px);
-    }
+        @media print {
+            border-color: transparent;
+        }
+    };
 
     &.selected {
         border-left-color: @marked_border_color;
-        &:before {
-            border-left-color:@marked_border_color
-        }
         ._marked_style(5px);
-        &.marked {
-            &:before{
-               ._arrow(@marked_border_color, 10px);
-            }
+
+        &:before {
+            border-left-color:@marked_border_color;
+        }
+        
+        &.marked:before {
+            ._arrow(@marked_border_color, 10px);
+        }
+        
+        @media print {
+            border-color: transparent;
         }
     }
 
@@ -81,53 +93,16 @@ div.cell {
         border-color: @edit_mode_border_color;
 
         &:before {
-            border-left-color:@edit_mode_border_color
-        }
+            border-left-color:@edit_mode_border_color;
+        };
 
-
-        /* Don't border the cells when printing */
         @media print {
             border-color: transparent;
-        }
-
-
+        };
     }
 
 }
 
-
-//div.cell {
-//    &.marked.soft-selected {
-//        border-left-color: @marked_border_color_light;
-//    }
-//
-//    &.marked{
-//        ._marked_style(5px);
-//        border-left-color: @marked_border_color_light;
-//        border-style: double;
-//        /* Don't border the cells when printing */
-//        @media print {
-//            border-color: transparent;
-//        }
-//    }
-//
-//    &.selected {
-//        border-left-color: @marked_border_color;
-//        ._marked_style(4px);
-//
-//        &.marked {
-//          ._marked_style(4px);
-//        }
-//
-//        /* Don't border the cells when printing */
-//        @media print {
-//            border-color: transparent;
-//        }
-//    }
-//
-//
-//
-//}
 
 .prompt {
     /* This needs to be wide enough for 3 digit prompt numbers: In[100]: */
