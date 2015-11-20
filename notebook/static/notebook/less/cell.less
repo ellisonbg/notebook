@@ -10,8 +10,8 @@ div.cell {
     .vbox();
     .corner-all();
     .border-box-sizing();
-
-    border-width: @border_width;
+    
+    border-width: @cell_border_width;
     border-style: solid;
     border-color: transparent;
 
@@ -24,14 +24,14 @@ div.cell {
     ._marked_style(@cell_border_width);
 
 
-    &.marked {
-        border-left-color: @marked_border_color_light;
-        ._marked_style(2px);
-        @media print {
-            border-color: transparent;
-        }
-
-    };
+    //&.marked {
+    //    border-left-color: @marked_border_color_light;
+    //    ._marked_style(2px);
+    //    @media print {
+    //        border-color: transparent;
+    //    }
+    //
+    //}
 
     &.jupyter-soft-selected {
         border-left-color: @marked_border_color_light;
@@ -39,15 +39,15 @@ div.cell {
         &.last  {border-bottom-color:@border_color}
         border-right-color: @border_color;
 
-        ._marked_style(4px);
+        ._marked_style(3px);
         @media print {
             border-color: transparent;
         }
-    };
+    }
 
     &.selected {
         border-left-color: @marked_border_color;
-        ._marked_style(5px);
+        ._marked_style(4px);
 
         &:before {
             border-left-color:@marked_border_color;
@@ -67,7 +67,7 @@ div.cell {
 
         @media print {
             border-color: transparent;
-        };
+        }
     }
 
 }
