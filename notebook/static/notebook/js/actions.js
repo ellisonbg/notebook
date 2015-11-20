@@ -107,10 +107,10 @@ define(function(require){
             }
         },
         'run-cell':{
-            help    : 'run marked cells',
+            help    : 'run selected cells',
             help_index : 'bb',
             handler : function (env) {
-                env.notebook.execute_marked_cells();
+                env.notebook.execute_selected_cells();
             }
         },
         'run-cell-and-insert-below':{
@@ -179,20 +179,18 @@ define(function(require){
                 }
             }
         },
-        'extend-marked-cells-above' : {
-            help: 'extend marked cells above',
+        'extend-selection-above' : {
+            help: 'extend selected cells above',
             help_index : 'dc',
             handler : function (env) {
-                //env.notebook.extend_marked(-1);
                 env.notebook.select_head_only_delta(-1)
             }
         },
-        'extend-marked-cells-below' : {
-            help: 'extend marked cells below',
+        'extend-selection-below' : {
+            help: 'extend selected cells below',
             help_index : 'dd',
             handler : function (env) {
                 env.notebook.select_head_only_delta(1)
-                //env.notebook.extend_marked(1);
             }
         },
         'cut-cell' : {
@@ -382,10 +380,10 @@ define(function(require){
             }
         },
         'merge-cells' : {
-            help : 'merge marked cells',
+            help : 'merge selected cells',
             help_index: 'el',
             handler: function(env) {
-                env.notebook.merge_marked_cells();
+                env.notebook.merge_selected_cells();
             }
         },
         'close-pager' : {
@@ -402,42 +400,41 @@ define(function(require){
                 env.notebook.show_command_palette();
             }
         },
-        'toggle-cell-marked': {
-            help_index : 'cj',
-            help: 'toggle marks',
-            icon: 'fa-check',
-            handler : function(env){
-                // Use bitwise logic to toggle the marked state.
-                env.notebook.get_cell_selection().map(function(cell, index){cell.marked ^= true});
-            }
-        },
-       'mark-selected-cells': {
-            handler : function(env){
-                // Use bitwise logic to toggle the marked state.
-                env.notebook.get_cell_selection().map(function(cell, index){cell.marked = true});
-            }
-        },
-        'unmark-selected-cells': {
-            handler : function(env){
-                // Use bitwise logic to toggle the marked state.
-                env.notebook.get_cell_selection().map(function(cell, index){cell.marked = false});
-            }
-        },
-
-        'unmark-all-cells': {
-            help_index : 'ck',
-            help : 'unmark all cells',
-            handler : function(env) {
-                env.notebook.unmark_all_cells();
-            }
-        },
-        'mark-all-cells': {
-            help_index : 'cl',
-            help : 'mark all cells',
-            handler : function(env) {
-                env.notebook.mark_all_cells();
-            }
-        },
+        //'toggle-cell-marked': {
+        //    help_index : 'cj',
+        //    help: 'toggle marks',
+        //    icon: 'fa-check',
+        //    handler : function(env){
+        //        // Use bitwise logic to toggle the marked state.
+        //        env.notebook.get_cell_selection().map(function(cell, index){cell.marked ^= true});
+        //    }
+        //},
+        //'mark-selected-cells': {
+        //     handler : function(env){
+        //         // Use bitwise logic to toggle the marked state.
+        //         env.notebook.get_cell_selection().map(function(cell, index){cell.marked = true});
+        //     }
+        // },
+        // 'unmark-selected-cells': {
+        //     handler : function(env){
+        //         // Use bitwise logic to toggle the marked state.
+        //         env.notebook.get_cell_selection().map(function(cell, index){cell.marked = false});
+        //     }
+        // },
+        //'unmark-all-cells': {
+        //    help_index : 'ck',
+        //    help : 'unmark all cells',
+        //    handler : function(env) {
+        //        env.notebook.unmark_all_cells();
+        //    }
+        //},
+        //'mark-all-cells': {
+        //    help_index : 'cl',
+        //    help : 'mark all cells',
+        //    handler : function(env) {
+        //        env.notebook.mark_all_cells();
+        //    }
+        //},
         'toggle-toolbar':{
             help: 'hide/show the toolbar',
             handler : function(env){

@@ -320,9 +320,12 @@ define([
      */
     Object.defineProperty(Cell.prototype, 'marked', {
         get: function() {
-            return this.element.hasClass('marked');
+            return false;
+            //return this.element.hasClass('marked');
         },
         set: function(value) {
+            console.warn("Marking cells istemporarly disable, please do not use");
+            return
             var isMarked = this.element.hasClass('marked');
             // Use a casting comparison.  Allows for the caller to assign 0 or
             // 1 instead of a boolean value, which in return means the caller
