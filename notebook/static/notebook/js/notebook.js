@@ -219,7 +219,7 @@ define(function (require) {
 
         this.events.on('select.Cell', function (event, data) {
             var index = that.find_cell_index(data.cell);
-            that.select(index);
+            that.select(index, !data.extendSelection);
         });
 
         this.events.on('edit_mode.Cell', function (event, data) {
@@ -587,6 +587,18 @@ define(function (require) {
         return this.get_cells().filter(function(cell, index){ return cell.selected || cell.soft_selected || cell.anchor})
     };
 
+    Notebook.prototype.get_cell_selection_indices = function () {
+
+        var result = [];
+        this.get_cells().filter(function (cell, index) {
+            if (cell.selected || cell.soft_selected || cell.anchor) {
+                result.push(index);
+            }
+        });
+        return result;
+    };
+
+
     /**
      * Get the currently selected cell.
      * 
@@ -788,6 +800,12 @@ define(function (require) {
 
 
     }
+
+    Notebook.prototype._contract_selection = function(){
+        var i = this.get_selected_index();
+        this.select(i, true);
+    }
+
     /**
      * Programmatically select a cell.
      * 
@@ -832,9 +850,9 @@ define(function (require) {
      *
      * @return {Notebook} This notebook
      */
-    Notebook.prototype.select_next = function (anchor) {
+    Notebook.prototype.select_next = function (moveanchor) {
         var index = this.get_selected_index();
-        this.select(index+1, anchor);
+        this.select(index+1, moveanchor);
         return this;
     };
 
@@ -843,9 +861,9 @@ define(function (require) {
      *
      * @return {Notebook} This notebook
      */
-    Notebook.prototype.select_prev = function (anchor) {
+    Notebook.prototype.select_prev = function (moveanchor) {
         var index = this.get_selected_index();
-        this.select(index-1, anchor);
+        this.select(index-1, moveanchor);
         return this;
     };
 
@@ -911,6 +929,7 @@ define(function (require) {
      * Make a cell enter edit mode.
      */
     Notebook.prototype.edit_mode = function () {
+        this._contract_selection();
         var cell = this.get_selected_cell();
         if (cell && this.mode !== 'edit') {
             cell.unrender();
@@ -1611,8 +1630,8 @@ define(function (require) {
     /**
      * Merge the selected range of cells
      */
-    Notebook.prototype.merge_marked_cells = function() {
-        this.merge_cells(this.get_marked_indices());
+    Notebook.prototype.merge_selected_cells = function() {
+        this.merge_cells(this.get_cell_selection_indices());
     };
 
     /**

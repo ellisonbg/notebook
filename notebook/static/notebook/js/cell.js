@@ -169,19 +169,19 @@ define([
         // We trigger events so that Cell doesn't have to depend on Notebook.
         that.element.click(function (event) {
             if (!that.selected) {
-                that.events.trigger('select.Cell', {'cell':that});
+                that.events.trigger('select.Cell', {'cell':that, 'extendSelection':event.shiftKey});
             }
             
             // Cmdtrl-click should mark the cell.
-            var isMac = navigator.platform.slice(0, 3).toLowerCase() === 'mac';
-            if ((!isMac && event.ctrlKey) || (isMac && event.metaKey)) {
-                that.marked = !that.marked;
-            }
+            // var isMac = navigator.platform.slice(0, 3).toLowerCase() === 'mac';
+            // if ((!isMac && event.ctrlKey) || (isMac && event.metaKey)) {
+            //    that.marked = !that.marked;
+            // }
         });
         that.element.focusin(function (event) {
-            if (!that.selected) {
-                that.events.trigger('select.Cell', {'cell':that});
-            }
+            //if (!that.selected) {
+            //    that.events.trigger('select.Cell', {'cell':that});
+            //}
         });
         if (this.code_mirror) {
             this.code_mirror.on("change", function(cm, change) {
