@@ -185,9 +185,6 @@ define(function (require) {
     Notebook.prototype.bind_events = function () {
         var that = this;
 
-        this.events.on('marked_changed.Cell', function() {
-            that.update_marked_status();
-        });
 
         this.events.on('set_next_input.Notebook', function (event, data) {
             if (data.replace) {
@@ -296,9 +293,6 @@ define(function (require) {
             expand_time(time);
         });
 
-        this.scroll_manager.onScroll(function () {
-            that.update_marked_status();
-        }, 100);
 
         // Firefox 22 broke $(window).on("beforeunload")
         // I'm not sure why or how.
@@ -830,7 +824,6 @@ define(function (require) {
             }
             var cell = this.get_cell(index);
             cell.select(moveanchor);
-            this.update_marked_status();
             if (cell.cell_type === 'heading') {
                 this.events.trigger('selected_cell_type_changed.Notebook',
                     {'cell_type':cell.cell_type,level:cell.level}

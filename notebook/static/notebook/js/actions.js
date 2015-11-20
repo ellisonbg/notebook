@@ -450,14 +450,12 @@ define(function(require){
                 events.trigger('resize-header.Page');
             }
         },
-        'close-pager-or-unmark-all-cells': {
-            help : 'close the pager or unmark all cells',
+        'close-pager': {
+            help : 'close the pager',
             handler : function(env) {
-                // Collapse the page if it is open, otherwise unmark all.
+                // Collapse the page if it is open
                 if (env.pager && env.pager.expanded) {
                     env.pager.collapse();
-                } else {
-                    env.notebook.unmark_all_cells();
                 }
             }
         },
