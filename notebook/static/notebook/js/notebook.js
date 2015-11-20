@@ -782,6 +782,7 @@ define(function (require) {
     Notebook.prototype.update_soft_selection = function(){
         var i1 = this.get_selected_index();
         var i2 = this.get_anchor_index();
+        console.warn('update soft selection from', i1, ' to ', i2)
         var low  = Math.min(i1, i2);
         var high = Math.max(i1, i2);
         this.get_cells().map(function(cell, index, all){
@@ -798,6 +799,40 @@ define(function (require) {
     Notebook.prototype._contract_selection = function(){
         var i = this.get_selected_index();
         this.select(i, true);
+        console.log('selection is supposed to be contracted now.')
+    }
+
+
+    Notebook.prototype._move_selection_head = function(new_index){
+        if(!this.is_valid_cell_index(new_index)){
+            return 
+        }
+
+        var current_index = this.get_selected_index();
+
+        if(new_index === current_index && current_index !== null){
+            return
+        }
+        
+        this.get_cell(current_index).unselect(false);
+        var cell = this.get_cell(new_index).select(false);
+    }
+    
+    Notebook.prototype._move_selection_anchor = function(new_index){
+        if(!this.is_valid_cell_index(new_index)){
+            return 
+        }
+
+        var current_index = this.get_anchor_index();
+
+        if(new_index === current_index && current_index !== null){
+            return
+        }
+
+        this.get_cell(current_index).unselect(true);
+        this.get_cell(new_index).select(true);
+
+
     }
 
     /**
@@ -808,33 +843,26 @@ define(function (require) {
      */
     Notebook.prototype.select = function (index, moveanchor) {
         moveanchor = (moveanchor===undefined)? true : moveanchor;
+        console.warn('move selection to' , index, ' moveanchor:', moveanchor)
 
-        if (this.is_valid_cell_index(index)) {
-            var sindex = this.get_selected_index();
-            if (sindex !== null && index !== sindex) {
-                // If we are about to select a different cell, make sure we are
-                // first in command mode.
-                if (this.mode !== 'command') {
-                    this.command_mode();
-                }
-                this.get_cell(sindex).unselect(moveanchor);
-                if(moveanchor){
-                    this.get_cell(this.get_anchor_index()).unselect(true); 
-                }
-            }
-            var cell = this.get_cell(index);
-            cell.select(moveanchor);
-            if (cell.cell_type === 'heading') {
-                this.events.trigger('selected_cell_type_changed.Notebook',
-                    {'cell_type':cell.cell_type,level:cell.level}
-                );
-            } else {
-                this.events.trigger('selected_cell_type_changed.Notebook',
-                    {'cell_type':cell.cell_type}
-                );
-            }
+        if(moveanchor){
+            this._move_selection_anchor(index)
         }
+        this._move_selection_head(index)
         this.update_soft_selection();
+
+        var cell = this.get_cell(index);
+        
+        if (cell.cell_type === 'heading') {
+            this.events.trigger('selected_cell_type_changed.Notebook',
+                {'cell_type':cell.cell_type, level:cell.level}
+            );
+        } else {
+            this.events.trigger('selected_cell_type_changed.Notebook',
+                {'cell_type':cell.cell_type}
+            );
+        }
+
         return this;
     };
 
@@ -910,6 +938,9 @@ define(function (require) {
      * @param {Cell} [cell] Cell to enter edit mode on.
      */
     Notebook.prototype.handle_edit_mode = function (cell) {
+        var ix = this.find_cell_index(cell)
+        this.select(ix, true);
+        this._contract_selection()
         if (cell && this.mode !== 'edit') {
             cell.edit_mode();
             this.mode = 'edit';
