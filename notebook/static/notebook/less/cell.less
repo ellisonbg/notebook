@@ -37,17 +37,9 @@ div.cell {
         border-left-color: @marked_border_color_light;
         &.first {border-top-color:   @border_color}
         &.last  {border-bottom-color:@border_color}
-        transition: background-color 0.2s ease;
-
-        background-color: #9DDCFF;
-
-        &.first.last{
-            background-color: transparent;
-        }
-
-
         border-right-color: @border_color;
 
+        ._marked_style(3px);
         @media print {
             border-color: transparent;
         }
@@ -55,7 +47,7 @@ div.cell {
 
     &.selected {
         border-left-color: @marked_border_color;
-        ._marked_style(5px);
+        ._marked_style(4px);
 
         &:before {
             border-left-color:@marked_border_color;

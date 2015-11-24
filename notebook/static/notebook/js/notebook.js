@@ -847,14 +847,7 @@ define(function (require) {
 
         if(moveanchor){
             this._move_selection_anchor(index)
-        } 
-        
-        // shift click select range of text, do not select range of text when
-        // selecting multiple cells. 
-        if (!moveanchor && (index !== this.get_selected_index()) ){
-            document.getSelection().removeAllRanges();
         }
-
         this._move_selection_head(index)
         this.update_soft_selection();
 

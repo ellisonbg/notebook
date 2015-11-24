@@ -386,12 +386,6 @@ define(function(require){
                 env.notebook.merge_selected_cells();
             }
         },
-        'close-pager' : {
-            help_index : 'gd',
-            handler : function (env) {
-                env.pager.collapse();
-            }
-        },
         'show-command-palette': {
             help_index : 'aa',
             help: 'open the command palette',
