@@ -168,9 +168,10 @@ define([
         var that = this;
         // We trigger events so that Cell doesn't have to depend on Notebook.
         that.element.click(function (event) {
-            that.events.trigger('select.Cell', {'cell':that, 'extendSelection':event.shiftKey});
-            event.preventDefault();
-
+            if (!that.selected) {
+                that.events.trigger('select.Cell', {'cell':that, 'extendSelection':event.shiftKey});
+            }
+            
             // Cmdtrl-click should mark the cell.
             // var isMac = navigator.platform.slice(0, 3).toLowerCase() === 'mac';
             // if ((!isMac && event.ctrlKey) || (isMac && event.metaKey)) {
@@ -279,8 +280,7 @@ define([
         if(moveanchor){
             this.element.addClass('jupyter-anchor');
             this.anchor=true;
-            return false;
-        } 
+        }
 
         if (!this.selected) {
             this.element.addClass('selected');
@@ -299,11 +299,10 @@ define([
      */
     Cell.prototype.unselect = function (moveanchor) {
         // if anchor is true, remove the anchor
-        moveanchor = (moveanchor === undefined)?true:moveanchor;
+        moveanchor = (moveanchor === undefined)? true:moveanchor;
         if (moveanchor){
             this.anchor = false
             this.element.removeClass('jupyter-anchor');
-            return
         }
         if (this.selected) {
             this.element.addClass('unselected');
