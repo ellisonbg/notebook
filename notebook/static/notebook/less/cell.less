@@ -5,54 +5,73 @@
     padding-left: @cell_padding - @n;
 }
 
+
 div.cell {
-    border: @cell_border_width solid transparent;
     .vbox();
     .corner-all();
     .border-box-sizing();
+    
     border-width: @cell_border_width;
     border-style: solid;
-
-    &.marked {
-        ._marked_style(3px);
-        border-left-color: @marked_border_color_light;
-
-        /* Don't border the cells when printing */
-        @media print {
-            border-color: transparent;
-        }
-    }
-
-    &.selected {
-        border-color: @border_color;
-        border-left-color: @marked_border_color;
-        ._marked_style(2px);
-
-        &.marked {
-          ._marked_style(4px);
-        }
-
-        /* Don't border the cells when printing */
-        @media print {
-            border-color: transparent;
-        }
-    }
-
-    .edit_mode &.selected {
-        border-color: @edit_mode_border_color;
-
-        /* Don't border the cells when printing */
-        @media print {
-            border-color: transparent;
-        }
-    }
+    border-color: transparent;
 
     width: 100%;
     padding: @_cell_padding_minus_border;
     /* This acts as a spacer between cells, that is outside the border */
     margin: 0px;
     outline: none;
+   
+    ._marked_style(@cell_border_width);
+
+
+    //&.marked {
+    //    border-left-color: @marked_border_color_light;
+    //    ._marked_style(2px);
+    //    @media print {
+    //        border-color: transparent;
+    //    }
+    //
+    //}
+
+    &.jupyter-soft-selected {
+        border-left-color: @marked_border_color_light;
+        &.first {border-top-color:   @border_color}
+        &.last  {border-bottom-color:@border_color}
+        border-right-color: @border_color;
+
+        ._marked_style(3px);
+        @media print {
+            border-color: transparent;
+        }
+    }
+
+    &.selected {
+        border-left-color: @marked_border_color;
+        ._marked_style(4px);
+
+        &:before {
+            border-left-color:@marked_border_color;
+        }
+        
+        @media print {
+            border-color: transparent;
+        }
+    }
+
+    .edit_mode &.selected{
+        border-color: @edit_mode_border_color;
+
+        &:before {
+            border-left-color:@edit_mode_border_color;
+        };
+
+        @media print {
+            border-color: transparent;
+        }
+    }
+
 }
+
 
 .prompt {
     /* This needs to be wide enough for 3 digit prompt numbers: In[100]: */

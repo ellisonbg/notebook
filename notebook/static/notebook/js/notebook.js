@@ -185,9 +185,6 @@ define(function (require) {
     Notebook.prototype.bind_events = function () {
         var that = this;
 
-        this.events.on('marked_changed.Cell', function() {
-            that.update_marked_status();
-        });
 
         this.events.on('set_next_input.Notebook', function (event, data) {
             if (data.replace) {
@@ -219,7 +216,7 @@ define(function (require) {
 
         this.events.on('select.Cell', function (event, data) {
             var index = that.find_cell_index(data.cell);
-            that.select(index);
+            that.select(index, !data.extendSelection);
         });
 
         this.events.on('edit_mode.Cell', function (event, data) {
@@ -296,9 +293,6 @@ define(function (require) {
             expand_time(time);
         });
 
-        this.scroll_manager.onScroll(function () {
-            that.update_marked_status();
-        }, 100);
 
         // Firefox 22 broke $(window).on("beforeunload")
         // I'm not sure why or how.
@@ -582,6 +576,23 @@ define(function (require) {
         return i;
     };
 
+
+    Notebook.prototype.get_cell_selection = function () {
+        return this.get_cells().filter(function(cell, index){ return cell.selected || cell.soft_selected || cell.anchor})
+    };
+
+    Notebook.prototype.get_cell_selection_indices = function () {
+
+        var result = [];
+        this.get_cells().filter(function (cell, index) {
+            if (cell.selected || cell.soft_selected || cell.anchor) {
+                result.push(index);
+            }
+        });
+        return result;
+    };
+
+
     /**
      * Get the currently selected cell.
      * 
@@ -606,6 +617,15 @@ define(function (require) {
         }
     };
 
+    Notebook.prototype.get_anchor_index = function () {
+        var result = null;
+        this.get_cell_elements().filter(function (index) {
+            if ($(this).data("cell").anchor === true) {
+                result = index;
+            }
+        });
+        return result;
+    };
     /**
      * Get the index of the currently selected cell.
      *
@@ -663,7 +683,7 @@ define(function (require) {
      */
     Notebook.prototype.get_marked_cells = function(cells) {
         cells = cells || this.get_cells();
-        return cells.filter(function(cell) { return (cell.marked || cell.selected); });
+        return cells.filter(function(cell) { return (cell.marked || cell.selected || cell.soft_selected); });
     };
     
     /**
@@ -688,37 +708,38 @@ define(function (require) {
         return markedCells.map(function(cell) { return cells.indexOf(cell); });
     };
     
-    /**
-     * Checks if the marked cells are contiguous
-     * @param  {Cell[]} [cells] - optionally provide the cells to search through
-     * @return {boolean}
-     */
-    Notebook.prototype.are_marked_cells_contiguous = function(cells) {
-        // Get a numerically sorted list of the marked indices.
-        var markedIndices = this.get_marked_indices(cells).sort(
-            function(a,b) { return a-b; });
+    // /**
+    //  * Checks if the marked cells are contiguous
+    //  * @param  {Cell[]} [cells] - optionally provide the cells to search through
+    //  * @return {boolean}
+    //  */
+    // Notebook.prototype.are_marked_cells_contiguous = function(cells) {
+    //     // Get a numerically sorted list of the marked indices.
+    //     var markedIndices = this.get_marked_indices(cells).sort(
+    //         function(a,b) { return a-b; });
 
-        // Check for contiguousness
-        for (var i = 0; i < markedIndices.length - 1; i++) {
-            if (markedIndices[i+1] - markedIndices[i] !== 1) {
-                return false;
-            }
-        }
-        return true;
-    };
-    
-    /**
-     * Checks if the marked cells specified by their indices are contiguous
-     * @param  {number[]} indices - the cell indices to search through
-     * @param  {Cell[]} [cells] - the cells to search through
-     * @return {boolean}
-     */
-    Notebook.prototype.are_marked_indices_contiguous = function(indices, cells) {
-        cells = cells || this.get_cells();
-        return this.are_marked_cells_contiguous(cells.filter(function(cell, index) {
-            return indices.indexOf(index) !== -1;
-        }));
-    };
+    //     // Check for contiguousness
+    //     for (var i = 0; i < markedIndices.length - 1; i++) {
+    //         if (markedIndices[i+1] - markedIndices[i] !== 1) {
+    //             return false;
+    //         }
+    //     }
+    //     return true;
+    // };
+    // 
+    // /**
+    //  * Checks if the marked cells specified by their indices are contiguous
+    //  * @param  {number[]} indices - the cell indices to search through
+    //  * @param  {Cell[]} [cells] - the cells to search through
+    //  * @return {boolean}
+    //  */
+    // Notebook.prototype.are_marked_indices_contiguous = function(indices, cells) {
+    //     cells = cells || this.get_cells();
+    //     return this.are_marked_cells_contiguous(cells.filter(function(cell, index) {
+    //         return indices.indexOf(index) !== -1;
+    //     }));
+    // };
+
 
     /**
      * Extend the selected range
@@ -751,13 +772,43 @@ define(function (require) {
 
     // Cell selection.
 
+    Notebook.prototype.select_head_only_delta = function(delta) {
+        var index = this.get_selected_index();
+        // do not move anchor
+        return this.select(index+delta, false);
+    };
+
+
+    Notebook.prototype.update_soft_selection = function(){
+        var i1 = this.get_selected_index();
+        var i2 = this.get_anchor_index();
+        var low  = Math.min(i1, i2);
+        var high = Math.max(i1, i2);
+        this.get_cells().map(function(cell, index, all){
+            if( low <= index && index <= high ){
+                cell.soft_select(index == low, index == high);
+            } else {
+                cell.soft_unselect();
+            }
+        })
+
+
+    }
+
+    Notebook.prototype._contract_selection = function(){
+        var i = this.get_selected_index();
+        this.select(i, true);
+    }
+
     /**
      * Programmatically select a cell.
      * 
      * @param {integer} index - A cell's index
      * @return {Notebook} This notebook
      */
-    Notebook.prototype.select = function (index) {
+    Notebook.prototype.select = function (index, moveanchor) {
+        moveanchor = (moveanchor===undefined)? true : moveanchor;
+
         if (this.is_valid_cell_index(index)) {
             var sindex = this.get_selected_index();
             if (sindex !== null && index !== sindex) {
@@ -766,11 +817,13 @@ define(function (require) {
                 if (this.mode !== 'command') {
                     this.command_mode();
                 }
-                this.get_cell(sindex).unselect();
+                this.get_cell(sindex).unselect(moveanchor);
+                if(moveanchor){
+                    this.get_cell(this.get_anchor_index()).unselect(true); 
+                }
             }
             var cell = this.get_cell(index);
-            cell.select();
-            this.update_marked_status();
+            cell.select(moveanchor);
             if (cell.cell_type === 'heading') {
                 this.events.trigger('selected_cell_type_changed.Notebook',
                     {'cell_type':cell.cell_type,level:cell.level}
@@ -781,6 +834,7 @@ define(function (require) {
                 );
             }
         }
+        this.update_soft_selection();
         return this;
     };
 
@@ -789,9 +843,9 @@ define(function (require) {
      *
      * @return {Notebook} This notebook
      */
-    Notebook.prototype.select_next = function () {
+    Notebook.prototype.select_next = function (moveanchor) {
         var index = this.get_selected_index();
-        this.select(index+1);
+        this.select(index+1, moveanchor);
         return this;
     };
 
@@ -800,9 +854,9 @@ define(function (require) {
      *
      * @return {Notebook} This notebook
      */
-    Notebook.prototype.select_prev = function () {
+    Notebook.prototype.select_prev = function (moveanchor) {
         var index = this.get_selected_index();
-        this.select(index-1);
+        this.select(index-1, moveanchor);
         return this;
     };
 
@@ -868,6 +922,7 @@ define(function (require) {
      * Make a cell enter edit mode.
      */
     Notebook.prototype.edit_mode = function () {
+        this._contract_selection();
         var cell = this.get_selected_cell();
         if (cell && this.mode !== 'edit') {
             cell.unrender();
@@ -1568,8 +1623,8 @@ define(function (require) {
     /**
      * Merge the selected range of cells
      */
-    Notebook.prototype.merge_marked_cells = function() {
-        this.merge_cells(this.get_marked_indices());
+    Notebook.prototype.merge_selected_cells = function() {
+        this.merge_cells(this.get_cell_selection_indices());
     };
 
     /**
