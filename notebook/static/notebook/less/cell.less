@@ -57,19 +57,19 @@ div.cell {
         border-color: @border_color;
         border-left-color: @marked_border_color;
         ._marked_style(5px);
-        // background-color: white;
+        background-color: white;
         
         @media print {
             border-color: transparent;
         }
         
-        box-shadow: 0 0px 5px 0 rgba(0, 0, 0, @shadow-key-penumbra-opacity),
-                    0 1px 10px 0 rgba(0, 0, 0, @shadow-ambient-shadow-opacity),
-                    0 2px 4px -1px rgba(0, 0, 0, @shadow-key-umbra-opacity);
+        // box-shadow: 0 0px 5px 0 rgba(0, 0, 0, @shadow-key-penumbra-opacity),
+        //             0 1px 10px 0 rgba(0, 0, 0, @shadow-ambient-shadow-opacity),
+        //             0 2px 4px -1px rgba(0, 0, 0, @shadow-key-umbra-opacity);
     }
 
     &.selected.jupyter-soft-selected {
-        box-shadow: none;
+        background-color: #E3F2FD
     }
 
     .edit_mode &.selected {
