@@ -34,36 +34,30 @@ div.cell {
     //}
 
     &.jupyter-soft-selected {
-        border-left-color: @marked_border_color_light;
-        &.first {border-top-color:   @border_color}
-        &.last  {border-bottom-color:@border_color}
-        border-right-color: @border_color;
 
-        ._marked_style(3px);
-        @media print {
-            border-color: transparent;
-        }
-    }
-
-    &.selected {
+        border-color: transparent;
         border-left-color: @marked_border_color;
-        ._marked_style(4px);
-
-        &:before {
-            border-left-color:@marked_border_color;
-        }
+        ._marked_style(5px);
         
         @media print {
             border-color: transparent;
         }
     }
 
-    .edit_mode &.selected{
-        border-color: @edit_mode_border_color;
+    &.selected {
+        
+        border-color: @border_color;
+        border-left-color: @marked_border_color;
+        ._marked_style(5px);
+        
+        @media print {
+            border-color: transparent;
+        }
+    }
 
-        &:before {
-            border-left-color:@edit_mode_border_color;
-        };
+    .edit_mode &.selected {
+        border-color: @edit_mode_border_color;
+        ._marked_style(5px);
 
         @media print {
             border-color: transparent;
