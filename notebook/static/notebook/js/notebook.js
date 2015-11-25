@@ -782,10 +782,12 @@ define(function (require) {
     Notebook.prototype.update_soft_selection = function(){
         var i1 = this.get_selected_index();
         var i2 = this.get_anchor_index();
+        console.log(i1, i2);
         var low  = Math.min(i1, i2);
         var high = Math.max(i1, i2);
         this.get_cells().map(function(cell, index, all){
-            if( low <= index && index <= high ){
+            if( low <= index && index <= high && i1 !== i2){
+                console.log(index);
                 cell.soft_select(index == low, index == high);
             } else {
                 cell.soft_unselect();

@@ -3,7 +3,8 @@
 
 @cell_selected_background:      darken(@body-bg, 2%);
 @cell_background:               darken(@body-bg, 3.2%);
-@border_color:                  darken(@cell_selected_background, 31%);
+@border_color:                  transparent;
+// @border_color:                  darken(@cell_selected_background, 31%);
 @light_border_color:            darken(@cell_selected_background, 17%);
 @border_width:                  1px;
 @notebook_font_size:            14px;
@@ -15,8 +16,18 @@
 @output_prompt_color:           darkred;
 @output_pre_color:              black;
 @notification_widget_bg:        rgba(240, 240, 240, 0.5);
-@marked_border_color:           #009AF5;
-@marked_border_color_light:     #7AC7F5;
-@edit_mode_border_color:        green;
+
+
+// @marked_border_color:           @border_color;
+// @marked_border_color_light:     @border_color;
+
+@marked_border_color:           #42A5F5;
+@marked_border_color_light:     #90CAF9;
+
+
+// @marked_border_color:           #009AF5;
+// @marked_border_color_light:     #7AC7F5;
+
+@edit_mode_border_color:        #66BB6A;
 @cell_padding:                  6px;
 @cell_border_width:             1px;
