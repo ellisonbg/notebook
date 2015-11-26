@@ -5,12 +5,6 @@
     padding-left: @cell_padding - @n;
 }
 
-
-@shadow-key-umbra-opacity: 0.2;
-@shadow-key-penumbra-opacity: 0.14;
-@shadow-ambient-shadow-opacity: 0.12;
-
-
 div.cell {
     .vbox();
     .corner-all();
@@ -28,28 +22,16 @@ div.cell {
    
     ._marked_style(@cell_border_width);
 
-
-    //&.marked {
-    //    border-left-color: @marked_border_color_light;
-    //    ._marked_style(2px);
-    //    @media print {
-    //        border-color: transparent;
-    //    }
-    //
-    //}
-
     &.jupyter-soft-selected {
 
         border-color: transparent;
-        border-left-color: @marked_border_color_light;
+        border-left-color: #E3F2FD;
         ._marked_style(5px);
         background-color: #E3F2FD;
         
         @media print {
             border-color: transparent;
         }
-        
-        box-shadow: none;
     }
 
     &.selected {
@@ -62,10 +44,6 @@ div.cell {
         @media print {
             border-color: transparent;
         }
-        
-        // box-shadow: 0 0px 5px 0 rgba(0, 0, 0, @shadow-key-penumbra-opacity),
-        //             0 1px 10px 0 rgba(0, 0, 0, @shadow-ambient-shadow-opacity),
-        //             0 2px 4px -1px rgba(0, 0, 0, @shadow-key-umbra-opacity);
     }
 
     &.selected.jupyter-soft-selected {
