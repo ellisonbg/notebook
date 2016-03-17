@@ -2,7 +2,6 @@
 // Distributed under the terms of the Modified BSD License.
 
 define([
-    'jquery',
     'base/js/utils',
     'codemirror/lib/codemirror',
     'codemirror/mode/meta',
@@ -16,7 +15,7 @@ define([
     'codemirror/keymap/sublime',
     'codemirror/keymap/vim',
     ],
-function($,
+function(
     utils,
     CodeMirror
 ) {
@@ -116,7 +115,8 @@ function($,
 
             if (ext_idx > 0) {
                 // CodeMirror.findModeByExtension wants extension without '.'
-                modeinfo = CodeMirror.findModeByExtension(model.name.slice(ext_idx + 1));
+                modeinfo = CodeMirror.findModeByExtension(
+                    model.name.slice(ext_idx + 1).toLowerCase());
             }
         }
         if (modeinfo) {

@@ -2,12 +2,11 @@
 // Distributed under the terms of the Modified BSD License.
 
 define([
-    'jquery',
     'base/js/utils',
     'base/js/dialog',
     'base/js/keyboard',
     'moment',
-], function($, utils, dialog, keyboard, moment) {
+], function(utils, dialog, keyboard, moment) {
     "use strict";
 
     var SaveWidget = function (selector, options) {
@@ -82,8 +81,10 @@ define([
             body: dialog_body,
             notebook: options.notebook,
             keyboard_manager: this.keyboard_manager,
+            default_button: "Cancel",
             buttons : {
-                "OK": {
+                "Cancel": {},
+                "Rename": {
                     class: "btn-primary",
                     click: function () {
                         var new_name = d.find('input').val();
@@ -108,9 +109,8 @@ define([
                             return false;
                         }
                     }
-                },
-                "Cancel": {}
-                },
+                }
+            },
             open : function () {
                 /**
                  * Upon ENTER, click the OK button.

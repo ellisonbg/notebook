@@ -2,11 +2,10 @@
 // Distributed under the terms of the Modified BSD License.
 
 define([
-    'jquery',
     'base/js/namespace',
     'base/js/dialog',
-    'base/js/utils',
-], function($, IPython, dialog, utils) {
+    'base/js/utils'
+], function(IPython, dialog, utils) {
     "use strict";
     
     var KernelSelector = function(selector, notebook) {
@@ -147,7 +146,15 @@ define([
         
         // load kernel js
         if (ks.resources['kernel.js']) {
-            require([ks.resources['kernel.js']],
+
+            // Debug added for Notebook 4.2, please remove at some point in the
+            // future if the following does not append anymore when kernels
+            // have kernel.js
+            //
+            // > Uncaught (in promise) TypeError: require is not a function
+            // 
+            console.info('Dynamically requiring kernel.js, `requirejs` is ', requirejs);
+            requirejs([ks.resources['kernel.js']],
                 function (kernel_mod) {
                     if (kernel_mod && kernel_mod.onload) {
                         kernel_mod.onload();
@@ -267,13 +274,13 @@ define([
             title : 'Kernel not found',
             body : body,
             buttons : {
-                'Continue without kernel' : {
+                'Continue Without Kernel' : {
                     class : 'btn-danger',
                     click : function () {
                         that.events.trigger('no_kernel.Kernel');
                     }
                 },
-                OK : {
+                'Set Kernel' : {
                     class : 'btn-primary',
                     click : function () {
                         that.set_kernel(select.val());

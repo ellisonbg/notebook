@@ -2,12 +2,11 @@
 // Distributed under the terms of the Modified BSD License.
 
 define([
-    'jquery',
     'codemirror/lib/codemirror',
     'moment',
     // silently upgrades CodeMirror
     'codemirror/mode/meta',
-], function($, CodeMirror, moment){
+], function(CodeMirror, moment){
     "use strict";
     
     // keep track of which extensions have been loaded already
@@ -21,7 +20,7 @@ define([
     var load_extension = function (extension) {
         return new Promise(function(resolve, reject) {
             var ext_path = "nbextensions/" + extension;
-            require([ext_path], function(module) {
+            requirejs([ext_path], function(module) {
                 try {
                     if (extensions_loaded.indexOf(ext_path) < 0) {
                         console.log("Loading extension: " + extension);
@@ -46,10 +45,26 @@ define([
      * @return {Promise} that resolves to a list of loaded module handles.
      */
     var load_extensions = function () {
+        console.log('load_extensions', arguments);
         return Promise.all(Array.prototype.map.call(arguments, load_extension)).catch(function(err) {
             console.error("Failed to load extension" + (err.requireModules.length>1?'s':'') + ":", err.requireModules, err);
         });
     };
+
+    /**
+     * Return a list of extensions that should be active
+     * The config for nbextensions comes in as a dict where keys are 
+     * nbextensions paths and the values are a bool indicating if it 
+     * should be active. This returns a list of nbextension paths
+     * where the value is true
+     */
+    function filter_extensions(nbext_config) {
+        var active = [];
+        Object.keys(nbext_config).forEach(function (nbext) {
+            if (nbext_config[nbext]) {active.push(nbext);}
+        });
+        return active;
+    }
 
     /**
      * Wait for a config section to load, and then load the extensions specified
@@ -58,9 +73,8 @@ define([
     function load_extensions_from_config(section) {
         section.loaded.then(function() {
             if (section.data.load_extensions) {
-                var nbextension_paths = Object.getOwnPropertyNames(
-                                            section.data.load_extensions);
-                load_extensions.apply(this, nbextension_paths);
+                var active = filter_extensions(section.data.load_extensions);
+                load_extensions.apply(this, active);
             }
         });
     }
@@ -623,7 +637,7 @@ define([
             CodeMirror.findModeByMIME(modename) ||
             {mode: modename, mime: modename};
 
-        require([
+        requirejs([
                 // might want to use CodeMirror.modeURL here
                 ['codemirror/mode', info.mode, info.mode].join('/'),
             ], function() {
@@ -710,7 +724,7 @@ define([
 
             // Try loading the view module using require.js
             if (module_name) {
-                require([module_name], function(module) {
+                requirejs([module_name], function(module) {
                     if (module[class_name] === undefined) {
                         reject(new Error('Class '+class_name+' not found in module '+module_name));
                     } else {
@@ -824,10 +838,26 @@ define([
             return time.milliseconds.h;
         }
     };
-    
+
+    var format_datetime = function(date) {
+        var text = moment(date).fromNow();
+        return text === 'a few seconds ago' ? 'seconds ago' : text;
+    };
+
+    var datetime_sort_helper = function(a, b, order) {
+        if (moment(a).isBefore(moment(b))) {
+            return (order == 1) ? -1 : 1;
+        } else if (moment(a).isSame(moment(b))) {
+            return 0;
+        } else {
+            return (order == 1) ? 1 : -1;
+        }
+    };
+
     var utils = {
         load_extension: load_extension,
         load_extensions: load_extensions,
+        filter_extensions: filter_extensions,
         load_extensions_from_config: load_extensions_from_config,
         regex_split : regex_split,
         uuid : uuid,
@@ -864,6 +894,8 @@ define([
         reject: reject,
         typeset: typeset,
         time: time,
+        format_datetime: format_datetime,
+        datetime_sort_helper: datetime_sort_helper,
         _ansispan:_ansispan
     };
 

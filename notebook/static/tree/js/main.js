@@ -1,34 +1,28 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
+__webpack_public_path__ = window['staticURL'] + 'tree/js/built/';
 
+requirejs(['contents'], function(contents_service) {
 require([
-    'jquery',
     'base/js/namespace',
     'base/js/dialog',
     'base/js/events',
     'base/js/page',
     'base/js/utils',
     'services/config',
-    'contents',
     'tree/js/notebooklist',
     'tree/js/sessionlist',
     'tree/js/kernellist',
     'tree/js/terminallist',
     'tree/js/newnotebook',
     'auth/js/loginwidget',
-    // only loaded, not used:
-    'jquery-ui',
-    'bootstrap',
-    'custom/custom',
 ], function(
-    $,
     IPython,
     dialog,
     events,
     page,
     utils,
     config,
-    contents_service,
     notebooklist,
     sesssionlist,
     kernellist,
@@ -36,11 +30,10 @@ require([
     newnotebook,
     loginwidget){
     "use strict";
+    requirejs(['custom/custom'], function() {});
 
-    IPython.NotebookList = notebooklist.NotebookList;
+    // Setup all of the config related things
 
-    page = new page.Page();
-    
     var common_options = {
         base_url: utils.get_body_data("baseUrl"),
         notebook_path: utils.get_body_data("notebookPath"),
@@ -51,6 +44,10 @@ require([
     var common_config = new config.ConfigSection('common', common_options);
     common_config.load();
 
+    // Instantiate the main objects
+
+    page = new page.Page();
+
     var session_list = new sesssionlist.SesssionList($.extend({
         events: events},
         common_options));
@@ -58,6 +55,7 @@ require([
         base_url: common_options.base_url,
         common_config: common_config
     });
+    IPython.NotebookList = notebooklist.NotebookList;
     var notebook_list = new notebooklist.NotebookList('#notebook_list', $.extend({
         contents: contents,
         session_list:  session_list},
@@ -146,6 +144,8 @@ require([
     IPython.new_notebook_widget = new_buttons;
 
     events.trigger('app_initialized.DashboardApp');
+    
+    // Now actually load nbextensions
     utils.load_extensions_from_config(cfg);
     utils.load_extensions_from_config(common_config);
     
@@ -174,4 +174,5 @@ require([
     if (window.location.hash) {
         $("#tabs").find("a[href=" + window.location.hash + "]").click();
     }
+});
 });

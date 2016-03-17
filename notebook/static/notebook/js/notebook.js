@@ -7,7 +7,7 @@
 define(function (require) {
     "use strict";
     var IPython = require('base/js/namespace');
-    var $ = require('jquery');
+    var _ = require('underscore');
     var utils = require('base/js/utils');
     var dialog = require('base/js/dialog');
     var cellmod = require('notebook/js/cell');
@@ -66,6 +66,8 @@ define(function (require) {
         this.last_modified = null;
         // debug 484
         this._last_modified = 'init';
+        // Firefox workaround
+        this._ff_beforeunload_fired = false;
 
         //  Create default scroll manager.
         this.scroll_manager = new scrollmanager.ScrollManager(this);
@@ -123,9 +125,7 @@ define(function (require) {
         this.kernel = null;
         this.kernel_busy = false;
         this.clipboard = null;
-        this.undelete_backup = null;
-        this.undelete_index = null;
-        this.undelete_below = false;
+        this.undelete_backup_stack = [];
         this.paste_enabled = false;
         this.writable = false;
         // It is important to start out in command mode to match the intial mode
@@ -245,7 +245,7 @@ define(function (require) {
                 display_name: data.spec.display_name,
                 language: data.spec.language,
             };
-            if (!existing_spec || JSON.stringify(existing_spec) != JSON.stringify(that.metadata.kernelspec)) {
+            if (!existing_spec || ! _.isEqual(existing_spec, that.metadata.kernelspec)) {
                 that.set_dirty(true);
             }
             // start session if the current session isn't already correct
@@ -263,7 +263,7 @@ define(function (require) {
             var existing_info = that.metadata.language_info;
             var langinfo = kinfo.language_info;
             that.metadata.language_info = langinfo;
-            if (!existing_info || JSON.stringify(existing_info) != JSON.stringify(langinfo)) {
+            if (!existing_info || ! _.isEqual(existing_info, langinfo)) {
                 that.set_dirty(true);
             }
             // Mode 'null' should be plain, unhighlighted text.
@@ -312,6 +312,17 @@ define(function (require) {
             var kill_kernel = false;
             if (kill_kernel) {
                 that.session.delete();
+            }
+            if ( utils.browser[0] === "Firefox") {
+                // Workaround ancient Firefox bug showing beforeunload twice: https://bugzilla.mozilla.org/show_bug.cgi?id=531199
+                if (that._ff_beforeunload_fired) {
+                    return; // don't show twice on FF
+                }
+                that._ff_beforeunload_fired = true;
+                // unset flag immediately after dialog is dismissed
+                setTimeout(function () {
+                    that._ff_beforeunload_fired = false;
+                }, 1);
             }
             // if we are autosaving, trigger an autosave on nav-away.
             // still warn, because if we don't the autosave may fail.
@@ -865,6 +876,7 @@ define(function (require) {
         tomove.detach();
         pivot.after(tomove);
 
+        this.get_cell(selected-1).focus_cell();
         this.select(anchored - 1);
         this.select(selected - 1, false);
     };
@@ -891,6 +903,7 @@ define(function (require) {
         tomove.detach();
         pivot.before(tomove);
 
+        this.get_cell(selected+1).focus_cell();
         this.select(first);
         this.select(anchored + 1);
         this.select(selected + 1, false);
@@ -993,7 +1006,11 @@ define(function (require) {
             indices = this.get_selected_cells_indices();
         }
 
-        this.undelete_backup = [];
+        var undelete_backup = {
+            cells: [],
+            below: false,
+            index: 0,
+        };
 
         var cursor_ix_before = this.get_selected_index();
         var deleting_before_cursor = 0;
@@ -1013,13 +1030,10 @@ define(function (require) {
         indices.sort(function(a, b) {return b-a;});
         for (i=0; i < indices.length; i++) {
             var cell = this.get_cell(indices[i]);
-            this.undelete_backup.push(cell.toJSON());
+            undelete_backup.cells.push(cell.toJSON());
             this.get_cell_element(indices[i]).remove();
             this.events.trigger('delete.Cell', {'cell': cell, 'index': indices[i]});
         }
-
-        // Flip the backup copy of cells back to first-to-last order
-        this.undelete_backup.reverse();
 
         var new_ncells = this.ncells();
         // Always make sure we have at least one cell.
@@ -1028,14 +1042,13 @@ define(function (require) {
             new_ncells = 1;
         }
 
-        this.undelete_below = false;
         var cursor_ix_after = this.get_selected_index();
         if (cursor_ix_after === null) {
             // Selected cell was deleted
             cursor_ix_after = cursor_ix_before - deleting_before_cursor;
             if (cursor_ix_after >= new_ncells) {
                 cursor_ix_after = new_ncells - 1;
-                this.undelete_below = true;
+                undelete_backup.below = true;
             }
             this.select(cursor_ix_after);
         }
@@ -1043,15 +1056,16 @@ define(function (require) {
         // Check if the cells were after the cursor
         for (i=0; i < indices.length; i++) {
             if (indices[i] > cursor_ix_before) {
-                this.undelete_below = true;
+                undelete_backup.below = true;
             }
         }
 
         // This will put all the deleted cells back in one location, rather than
         // where they came from. It will do until we have proper undo support.
-        this.undelete_index = cursor_ix_after;
+        undelete_backup.index = cursor_ix_after;
         $('#undelete_cell').removeClass('disabled');
 
+        this.undelete_backup_stack.push(undelete_backup);
         this.set_dirty(true);
 
         return this;
@@ -1075,29 +1089,25 @@ define(function (require) {
      * Restore the most recently deleted cells.
      */
     Notebook.prototype.undelete_cell = function() {
-        if (this.undelete_backup !== null && this.undelete_index !== null) {
-            var i, cell_data, new_cell;
-            if (this.undelete_below) {
-                for (i = this.undelete_backup.length-1; i >= 0; i--) {
-                    cell_data = this.undelete_backup[i];
-                    new_cell = this.insert_cell_below(cell_data.cell_type,
-                        this.undelete_index);
-                    new_cell.fromJSON(cell_data);
-                }
+        if (this.undelete_backup_stack.length > 0) {
+            var undelete_backup = this.undelete_backup_stack.pop();
+            var i, cell_data, new_cell, insert;
+            if (undelete_backup.below) {
+                insert = $.proxy(this.insert_cell_below, this);
             } else {
-                for (i=0; i < this.undelete_backup.length; i++) {
-                    cell_data = this.undelete_backup[i];
-                    new_cell = this.insert_cell_above(cell_data.cell_type,
-                        this.undelete_index);
-                    new_cell.fromJSON(cell_data);
-                }
+                insert = $.proxy(this.insert_cell_above, this);
+            }
+            for (i=0; i < undelete_backup.cells.length; i++) {
+                cell_data = undelete_backup.cells[i];
+                new_cell = insert(cell_data.cell_type, undelete_backup.index);
+                new_cell.fromJSON(cell_data);
             }
 
             this.set_dirty(true);
-            this.undelete_backup = null;
-            this.undelete_index = null;
         }
-        $('#undelete_cell').addClass('disabled');
+        if (this.undelete_backup_stack.length === 0) {
+            $('#undelete_cell').addClass('disabled');
+        }
     };
 
     /**
@@ -1202,11 +1212,13 @@ define(function (require) {
         } else {
             return false;
         }
-
-        if (this.undelete_index !== null && index <= this.undelete_index) {
-            this.undelete_index = this.undelete_index + 1;
-            this.set_dirty(true);
-        }
+        
+        this.undelete_backup_stack.map(function (undelete_backup) {
+            if (index < undelete_backup.index) {
+                undelete_backup.index += 1;
+            }
+        });
+        this.set_dirty(true);
         return true;
     };
 
@@ -1219,7 +1231,7 @@ define(function (require) {
      * @return {Cell|null} handle to created cell or null
      */
     Notebook.prototype.insert_cell_above = function (type, index) {
-        if (index === null || index === undefined) {            
+        if (index === null || index === undefined) {
             index = Math.min(this.get_selected_index(index), this.get_anchor_index());
         }
         return this.insert_cell_at_index(type, index);
@@ -1985,7 +1997,7 @@ define(function (require) {
                 'Are you sure you want to restart the current kernel and re-execute the whole notebook?  All variables and outputs will be lost.'
             ),
             buttons : {
-                "Restart & run all cells" : {
+                "Restart and Run All Cells" : {
                     "class" : "btn-danger",
                     "click" : function () {
                         that.execute_all_cells();
@@ -2012,7 +2024,7 @@ define(function (require) {
                 'Do you want to restart the current kernel and clear all output?  All variables and outputs will be lost.'
             ),
             buttons : {
-                "Restart & clear all outputs" : {
+                "Restart and Clear All Outputs" : {
                     "class" : "btn-danger",
                     "click" : function (){
                         that.clear_all_output();
@@ -2073,7 +2085,7 @@ define(function (require) {
         options.dialog.keyboard_manager = this.keyboard_manager;
         // add 'Continue running' cancel button
         var buttons = {
-            "Continue running": {},
+            "Continue Running": {},
         };
         // hook up button.click actions after restart promise resolves
         Object.keys(options.dialog.buttons).map(function (key) {
@@ -2518,8 +2530,9 @@ define(function (require) {
         if (this.autosave_interval) {
             // new save interval: higher of 10x save duration or parameter (default 30 seconds)
             var interval = Math.max(10 * duration, this.minimum_autosave_interval);
-            // round to 10 seconds, otherwise we will be setting a new interval too often
-            interval = 10000 * Math.round(interval / 10000);
+            // ceil to 10 seconds, otherwise we will be setting a new interval too often
+            // do not round or anything below 5000ms will desactivate saving.
+            interval = 10000 * Math.ceil(interval / 10000);
             // set new interval, if it's changed
             if (interval !== this.autosave_interval) {
                 this.set_autosave_interval(interval);
@@ -2577,23 +2590,32 @@ define(function (require) {
 
     /**
      * Make a copy of the current notebook.
+     * If the notebook has unsaved changes, it is saved first.
      */
     Notebook.prototype.copy_notebook = function () {
         var that = this;
         var base_url = this.base_url;
         var w = window.open('', IPython._target);
         var parent = utils.url_path_split(this.notebook_path)[0];
-        this.contents.copy(this.notebook_path, parent).then(
-            function (data) {
-                w.location = utils.url_path_join(
-                    base_url, 'notebooks', utils.encode_uri_components(data.path)
-                );
-            },
-            function(error) {
-                w.close();
-                that.events.trigger('notebook_copy_failed', error);
-            }
-        );
+        var p;
+        if (this.dirty) {
+            p = this.save_notebook();
+        } else {
+            p = Promise.resolve();
+        }
+        return p.then(function () {
+            return that.contents.copy(that.notebook_path, parent).then(
+                function (data) {
+                    w.location = utils.url_path_join(
+                        base_url, 'notebooks', utils.encode_uri_components(data.path)
+                    );
+                },
+                function(error) {
+                    w.close();
+                    that.events.trigger('notebook_copy_failed', error);
+                }
+            );
+        });
     };
     
     /**
@@ -2954,15 +2976,16 @@ define(function (require) {
             keyboard_manager: this.keyboard_manager,
             title : "Revert notebook to checkpoint",
             body : body,
+            default_button: "Cancel",
             buttons : {
+                Cancel: {},
                 Revert : {
                     class : "btn-danger",
                     click : function () {
                         that.restore_checkpoint(checkpoint.id);
                     }
-                },
-                Cancel : {}
                 }
+            }
         });
     };
     

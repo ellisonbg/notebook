@@ -3,7 +3,6 @@
 
 define([
     'base/js/utils',
-    'jquery',
     'notebook/js/cell',
     'base/js/security',
     'services/config',
@@ -15,7 +14,6 @@ define([
     'notebook/js/codemirror-ipythongfm'
 ], function(
     utils,
-    $,
     cell,
     security,
     configmod,
@@ -70,7 +68,6 @@ define([
 
     TextCell.options_default = {
         cm_config : {
-            extraKeys: {"Tab": "indentMore","Shift-Tab" : "indentLess"},
             mode: 'htmlmixed',
             lineWrapping : true,
         }

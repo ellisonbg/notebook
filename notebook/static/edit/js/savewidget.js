@@ -2,12 +2,11 @@
 // Distributed under the terms of the Modified BSD License.
 
 define([
-    'jquery',
     'base/js/utils',
     'base/js/dialog',
     'base/js/keyboard',
     'moment',
-], function($, utils, dialog, keyboard, moment) {
+], function(utils, dialog, keyboard, moment) {
     "use strict";
 
     var SaveWidget = function (selector, options) {
@@ -72,7 +71,9 @@ define([
         var d = dialog.modal({
             title: "Rename File",
             body: dialog_body,
+            default_button: "Cancel",
             buttons : {
+                "Cancel": {},
                 "OK": {
                     class: "btn-primary",
                     click: function () {
@@ -89,9 +90,8 @@ define([
                         );
                         return false;
                     }
-                },
-                "Cancel": {}
-                },
+                }
+            },
             open : function () {
                 // Upon ENTER, click the OK button.
                 d.find('input[type="text"]').keydown(function (event) {

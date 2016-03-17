@@ -1,25 +1,26 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
+__webpack_public_path__ = window['staticURL'] + 'terminal/js/built/';
 
+requirejs(['termjs'], function(termjs) {
 require([
-    'jquery',
-    'termjs',
     'base/js/utils',
     'base/js/page',
     'services/config',
     'terminal/js/terminado',
-    'custom/custom',
 ], function(
-    $, 
-    termjs,
     utils,
     page,
     configmod,
     terminado
     ){
     "use strict";
+    requirejs(['custom/custom'], function() {});
     page = new page.Page();
 
+    var config = new configmod.ConfigSection('terminal', 
+                                    {base_url: utils.get_body_data('baseUrl')});
+    config.load();
     var common_config = new configmod.ConfigSection('common', 
                                     {base_url: utils.get_body_data('baseUrl')});
     common_config.load();
@@ -34,7 +35,8 @@ require([
     var ws_url = location.protocol.replace('http', 'ws') + "//" + location.host
                                     + base_url + ws_path;
     
-    var header = $("#header")[0]
+    var header = $("#header")[0];
+
     function calculate_size() {
         var height = $(window).height() - header.offsetHeight;
         var width = $('#terminado-container').width();
@@ -51,6 +53,7 @@ require([
     
     page.show_site();
     
+    utils.load_extensions_from_config(config);
     utils.load_extensions_from_config(common_config);
     
     window.onresize = function() { 
@@ -63,4 +66,5 @@ require([
     // Expose terminal for fiddling with in the browser
     window.terminal = terminal;
 
+});
 });

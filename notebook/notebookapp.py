@@ -6,7 +6,6 @@
 
 from __future__ import absolute_import, print_function
 
-import base64
 import datetime
 import errno
 import importlib
@@ -19,10 +18,15 @@ import re
 import select
 import signal
 import socket
-import ssl
 import sys
 import threading
+import warnings
 import webbrowser
+
+try: #PY3
+    from base64 import encodebytes
+except ImportError: #PY2
+    from base64 import encodestring as encodebytes
 
 
 from jinja2 import Environment, FileSystemLoader
@@ -77,7 +81,7 @@ from jupyter_client.session import Session
 from nbformat.sign import NotebookNotary
 from traitlets import (
     Dict, Unicode, Integer, List, Bool, Bytes, Instance,
-    TraitError, Type,
+    TraitError, Type, Float
 )
 from ipython_genutils import py3compat
 from jupyter_core.paths import jupyter_runtime_dir, jupyter_path
@@ -92,6 +96,15 @@ from .utils import url_path_join, check_pid, url_escape
 _examples = """
 jupyter notebook                       # start the notebook
 jupyter notebook --certfile=mycert.pem # use SSL/TLS certificate
+"""
+
+DEV_NOTE_NPM = """It looks like you're running the notebook from source.
+If you're working on the Javascript of the notebook, try running
+
+    npm run build:watch
+
+in another terminal window to have the system incrementally
+watch and build the notebook's JavaScript for you, as you make changes.
 """
 
 #-----------------------------------------------------------------------------
@@ -123,7 +136,7 @@ class DeprecationHandler(IPythonHandler):
             console.warn('`/static/widgets/js` is deprecated.  Use `nbextensions/widgets/widgets/js` instead.');
             define(['%s'], function(x) { return x; });
         """ % url_path_join('nbextensions', 'widgets', 'widgets', url_path.rstrip('.js')))
-        self.log.warn('Deprecated widget Javascript path /static/widgets/js/*.js was used')
+        self.log.warning('Deprecated widget Javascript path /static/widgets/js/*.js was used')
 
 #-----------------------------------------------------------------------------
 # The Tornado web application
@@ -135,6 +148,13 @@ class NotebookWebApplication(web.Application):
                  session_manager, kernel_spec_manager,
                  config_manager, log,
                  base_url, default_url, settings_overrides, jinja_env_options):
+
+        # If the user is running the notebook in a git directory, make the assumption
+        # that this is a dev install and suggest to the developer `npm run build:watch`.
+        base_dir = os.path.realpath(os.path.join(__file__, '..', '..'))
+        dev_mode = os.path.exists(os.path.join(base_dir, '.git'))
+        if dev_mode:
+            log.info(DEV_NOTE_NPM)
 
         settings = self.init_settings(
             ipython_app, kernel_manager, contents_manager,
@@ -171,6 +191,12 @@ class NotebookWebApplication(web.Application):
             # reset the cache on server restart
             version_hash = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
+        if ipython_app.ignore_minified_js:
+            log.warn("""The `ignore_minified_js` flag is deprecated and no 
+                longer works.  Alternatively use `npm run build:watch` when
+                working on the notebook's Javascript and LESS""")
+            warnings.warn("The `ignore_minified_js` flag is deprecated and will be removed in Notebook 6.0", DeprecationWarning)
+
         settings = dict(
             # basics
             log_function=log_request,
@@ -187,6 +213,11 @@ class NotebookWebApplication(web.Application):
             },
             version_hash=version_hash,
             ignore_minified_js=ipython_app.ignore_minified_js,
+            
+            # rate limits
+            iopub_msg_rate_limit=ipython_app.iopub_msg_rate_limit,
+            iopub_data_rate_limit=ipython_app.iopub_data_rate_limit,
+            rate_limit_window=ipython_app.rate_limit_window,
             
             # authentication
             cookie_secret=ipython_app.cookie_secret,
@@ -239,18 +270,24 @@ class NotebookWebApplication(web.Application):
         handlers.extend(load_handlers('services.nbconvert.handlers'))
         handlers.extend(load_handlers('services.kernelspecs.handlers'))
         handlers.extend(load_handlers('services.security.handlers'))
+        handlers.extend(load_handlers('lab.handlers'))
         
         # BEGIN HARDCODED WIDGETS HACK
+        widgets = None
         try:
-            import ipywidgets
+            import widgetsnbextension as widgets
+        except:
+            try:
+                import ipywidgets as widgets
+            except:
+                app_log.warning('Widgets are unavailable. Please install widgetsnbextension or ipywidgets 4.0')
+        if widgets is not None:
             handlers.append(
                 (r"/nbextensions/widgets/(.*)", FileFindHandler, {
-                    'path': ipywidgets.find_static_assets(),
+                    'path': widgets.find_static_assets(),
                     'no_cache_paths': ['/'], # don't cache anything in nbextensions
                 }),
             )
-        except:
-            app_log.warn('ipywidgets package not installed.  Widgets are unavailable.')
         # END HARDCODED WIDGETS HACK
         
         handlers.append(
@@ -333,6 +370,11 @@ flags['no-mathjax']=(
     """
 )
 
+flags['allow-root']=(
+    {'NotebookApp' : {'allow_root' : True}},
+    "Allow the notebook to be run from root user."
+)
+
 # Add notebook manager flags
 flags.update(boolean_flag('script', 'FileContentsManager.save_script',
                'DEPRECATED, IGNORED',
@@ -398,7 +440,7 @@ class NotebookApp(JupyterApp):
 
     ignore_minified_js = Bool(False,
             config=True,
-            help='Use minified JS file or not, mainly use during dev to avoid JS recompilation', 
+            help='Deprecated: Use minified JS file or not, mainly use during dev to avoid JS recompilation', 
             )
 
     # file to be opened in the notebook server
@@ -432,6 +474,10 @@ class NotebookApp(JupyterApp):
         help="Set the Access-Control-Allow-Credentials: true header"
     )
     
+    allow_root = Bool(False, config=True, 
+        help="Whether to allow the user to run the notebook as root."
+    )
+
     default_url = Unicode('/tree', config=True,
         help="The default URL to redirect to from `/`"
     )
@@ -448,7 +494,7 @@ class NotebookApp(JupyterApp):
         try:
             s.bind(('localhost', 0))
         except socket.error as e:
-            self.log.warn("Cannot bind to localhost, using 127.0.0.1 as default ip\n%s", e)
+            self.log.warning("Cannot bind to localhost, using 127.0.0.1 as default ip\n%s", e)
             return '127.0.0.1'
         else:
             s.close()
@@ -496,7 +542,7 @@ class NotebookApp(JupyterApp):
             with io.open(self.cookie_secret_file, 'rb') as f:
                 return f.read()
         else:
-            secret = base64.encodestring(os.urandom(1024))
+            secret = encodebytes(os.urandom(1024))
             self._write_cookie_secret_file(secret)
             return secret
     
@@ -508,7 +554,7 @@ class NotebookApp(JupyterApp):
         try:
             os.chmod(self.cookie_secret_file, 0o600)
         except OSError:
-            self.log.warn(
+            self.log.warning(
                 "Could not set permissions on %s",
                 self.cookie_secret_file
             )
@@ -544,7 +590,7 @@ class NotebookApp(JupyterApp):
         help="DEPRECATED, use tornado_settings"
     )
     def _webapp_settings_changed(self, name, old, new):
-        self.log.warn("\n    webapp_settings is deprecated, use tornado_settings.\n")
+        self.log.warning("\n    webapp_settings is deprecated, use tornado_settings.\n")
         self.tornado_settings = new
     
     tornado_settings = Dict(config=True,
@@ -592,7 +638,7 @@ class NotebookApp(JupyterApp):
     
     base_project_url = Unicode('/', config=True, help="""DEPRECATED use base_url""")
     def _base_project_url_changed(self, name, old, new):
-        self.log.warn("base_project_url is deprecated, use base_url")
+        self.log.warning("base_project_url is deprecated, use base_url")
         self.base_url = new
 
     extra_static_paths = List(Unicode(), config=True,
@@ -774,9 +820,18 @@ class NotebookApp(JupyterApp):
         self.config.FileContentsManager.root_dir = new
         self.config.MappingKernelManager.root_dir = new
 
+    # TODO: Remove me in notebook 5.0
     server_extensions = List(Unicode(), config=True,
-        help=("Python modules to load as notebook server extensions. "
-              "This is an experimental API, and may change in future releases.")
+        help=("DEPRECATED use the nbserver_extensions dict instead")
+    )
+    def _server_extensions_changed(self, name, old, new):
+        self.log.warning("server_extensions is deprecated, use nbserver_extensions")
+        self.server_extensions = new
+        
+    nbserver_extensions = Dict({}, config=True,
+        help=("Dict of Python modules to load as notebook server extensions."
+              "Entry values can be used to enable and disable the loading of"
+              "the extensions.")
     )
 
     reraise_server_extension_failures = Bool(
@@ -785,9 +840,20 @@ class NotebookApp(JupyterApp):
         help="Reraise exceptions encountered loading server extensions?",
     )
 
+    iopub_msg_rate_limit = Float(0, config=True, help="""(msg/sec)
+        Maximum rate at which messages can be sent on iopub before they are
+        limited.""")
+
+    iopub_data_rate_limit = Float(0, config=True, help="""(bytes/sec)
+        Maximum rate at which messages can be sent on iopub before they are
+        limited.""")
+
+    rate_limit_window = Float(1.0, config=True, help="""(sec) Time window used to 
+        check the message and data rate limits.""")
+
     def parse_command_line(self, argv=None):
         super(NotebookApp, self).parse_command_line(argv)
-        
+
         if self.extra_args:
             arg0 = self.extra_args[0]
             f = os.path.abspath(arg0)
@@ -870,13 +936,17 @@ class NotebookApp(JupyterApp):
             ssl_options['keyfile'] = self.keyfile
         if self.client_ca:
             ssl_options['ca_certs'] = self.client_ca
-            ssl_options['cert_reqs'] = ssl.CERT_REQUIRED
         if not ssl_options:
             # None indicates no SSL config
             ssl_options = None
         else:
+            # SSL may be missing, so only import it if it's to be used
+            import ssl
             # Disable SSLv3, since its use is discouraged.
-            ssl_options['ssl_version']=ssl.PROTOCOL_TLSv1
+            ssl_options['ssl_version'] = ssl.PROTOCOL_TLSv1
+            if ssl_options.get('ca_certs', False):
+                ssl_options['cert_reqs'] = ssl.CERT_REQUIRED
+        
         self.login_handler_class.validate_security(self, ssl_options=ssl_options)
         self.http_server = httpserver.HTTPServer(self.web_app, ssl_options=ssl_options,
                                                  xheaders=self.trust_xheaders)
@@ -887,10 +957,10 @@ class NotebookApp(JupyterApp):
                 self.http_server.listen(port, self.ip)
             except socket.error as e:
                 if e.errno == errno.EADDRINUSE:
-                    self.log.info('The port %i is already in use, trying another random port.' % port)
+                    self.log.info('The port %i is already in use, trying another port.' % port)
                     continue
                 elif e.errno in (errno.EACCES, getattr(errno, 'WSAEACCES', errno.EACCES)):
-                    self.log.warn("Permission to listen on port %i denied" % port)
+                    self.log.warning("Permission to listen on port %i denied" % port)
                     continue
                 else:
                     raise
@@ -923,7 +993,7 @@ class NotebookApp(JupyterApp):
             initialize(self.web_app, self.notebook_dir, self.connection_url)
             self.web_app.settings['terminals_available'] = True
         except ImportError as e:
-            log = self.log.debug if sys.platform == 'win32' else self.log.warn
+            log = self.log.debug if sys.platform == 'win32' else self.log.warning
             log("Terminals not available (error was %s)", e)
 
     def init_signal(self):
@@ -1000,17 +1070,26 @@ class NotebookApp(JupyterApp):
         
         The extension API is experimental, and may change in future releases.
         """
+        
+        # TODO: Remove me in notebook 5.0
         for modulename in self.server_extensions:
-            try:
-                mod = importlib.import_module(modulename)
-                func = getattr(mod, 'load_jupyter_server_extension', None)
-                if func is not None:
-                    func(self)
-            except Exception:
-                if self.reraise_server_extension_failures:
-                    raise
-                self.log.warn("Error loading server extension %s", modulename,
-                              exc_info=True)
+            # Don't override disable state of the extension if it already exist
+            # in the new traitlet
+            if not modulename in self.nbserver_extensions:
+                self.nbserver_extensions[modulename] = True
+        
+        for modulename in self.nbserver_extensions:
+            if self.nbserver_extensions[modulename]:
+                try:
+                    mod = importlib.import_module(modulename)
+                    func = getattr(mod, 'load_jupyter_server_extension', None)
+                    if func is not None:
+                        func(self)
+                except Exception:
+                    if self.reraise_server_extension_failures:
+                        raise
+                    self.log.warning("Error loading server extension %s", modulename,
+                                  exc_info=True)
     
     @catch_config_error
     def initialize(self, argv=None):
@@ -1072,6 +1151,17 @@ class NotebookApp(JupyterApp):
         
         This method takes no arguments so all configuration and initialization
         must be done prior to calling this method."""
+
+        if not self.allow_root:
+            # check if we are running as root, and abort if it's not allowed
+            try:
+                uid = os.geteuid()
+            except AttributeError:
+                uid = -1 # anything nonzero here, since we can't check UID assume non-root
+            if uid == 0:
+                self.log.critical("Running as root is not recommended. Use --allow-root to bypass.")
+                self.exit(1)
+
         super(NotebookApp, self).start()
 
         info = self.log.info
@@ -1085,7 +1175,7 @@ class NotebookApp(JupyterApp):
             try:
                 browser = webbrowser.get(self.browser or None)
             except webbrowser.Error as e:
-                self.log.warn('No web browser found: %s.' % e)
+                self.log.warning('No web browser found: %s.' % e)
                 browser = None
             
             if self.file_to_run:
@@ -1096,7 +1186,7 @@ class NotebookApp(JupyterApp):
                 relpath = os.path.relpath(self.file_to_run, self.notebook_dir)
                 uri = url_escape(url_path_join('notebooks', *relpath.split(os.sep)))
             else:
-                uri = 'tree'
+                uri = self.default_url
             if browser:
                 b = lambda : browser.open(url_path_join(self.connection_url, uri),
                                           new=2)
@@ -1157,4 +1247,3 @@ def list_running_servers(runtime_dir=None):
 #-----------------------------------------------------------------------------
 
 main = launch_new_instance = NotebookApp.launch_instance
-

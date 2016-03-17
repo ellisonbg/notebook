@@ -2,7 +2,7 @@
 # Another Docker container should inherit with `FROM jupyter/notebook`
 # to run actual services.
 
-FROM ubuntu:14.04
+FROM jupyter/ubuntu_14_04_locale_fix
 
 MAINTAINER Project Jupyter <jupyter@googlegroups.com>
 
@@ -59,14 +59,16 @@ RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
     python3 get-pip.py && \
     rm get-pip.py && \
     pip2 --no-cache-dir install requests[security] && \
-    pip3 --no-cache-dir install requests[security]
+    pip3 --no-cache-dir install requests[security] && \
+    rm -rf /root/.cache
 
 # Install some dependencies.
 RUN pip2 --no-cache-dir install ipykernel && \
     pip3 --no-cache-dir install ipykernel && \
     \
     python2 -m ipykernel.kernelspec && \
-    python3 -m ipykernel.kernelspec
+    python3 -m ipykernel.kernelspec && \
+    rm -rf /root/.cache
 
 # Move notebook contents into place.
 ADD . /usr/src/jupyter-notebook
@@ -76,21 +78,23 @@ RUN BUILD_DEPS="nodejs-legacy npm" && \
     apt-get update -qq && \
     DEBIAN_FRONTEND=noninteractive apt-get install -yq $BUILD_DEPS && \
     \
-    pip3 install --no-cache-dir --pre -e /usr/src/jupyter-notebook && \
+    pip3 install --no-cache-dir /usr/src/jupyter-notebook && \
+    pip2 install widgetsnbextension && \
+    pip3 install widgetsnbextension && \
     \
+    npm cache clean && \
     apt-get clean && \
+    rm -rf /root/.npm && \
+    rm -rf /root/.cache && \
+    rm -rf /root/.config && \
+    rm -rf /root/.local && \
+    rm -rf /root/tmp && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get purge -y --auto-remove \
         -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $BUILD_DEPS
 
 # Run tests.
-RUN pip2 install --no-cache-dir mock nose requests testpath && \
-    pip3 install --no-cache-dir nose requests testpath && \
-    \
-    iptest2 && iptest3 && \
-    \
-    pip2 uninstall -y funcsigs mock nose pbr requests six testpath && \
-    pip3 uninstall -y nose requests testpath
+RUN pip3 install --no-cache-dir notebook[test] && nosetests -v notebook
 
 # Add a notebook profile.
 RUN mkdir -p -m 700 /root/.jupyter/ && \

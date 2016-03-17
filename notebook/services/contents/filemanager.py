@@ -7,6 +7,7 @@
 import io
 import os
 import shutil
+import warnings
 import mimetypes
 import nbformat
 
@@ -24,6 +25,7 @@ from . import tz
 from notebook.utils import (
     is_hidden,
     to_api_path,
+    same_file,
 )
 
 _script_exporter = None
@@ -32,9 +34,10 @@ _script_exporter = None
 def _post_save_script(model, os_path, contents_manager, **kwargs):
     """convert notebooks to Python script after save with nbconvert
 
-    replaces `ipython notebook --script`
+    replaces `jupyter notebook --script`
     """
     from nbconvert.exporters.script import ScriptExporter
+    warnings.warn("`_post_save_script` is deprecated and will be removed in Notebook 5.0", DeprecationWarning)
 
     if model['type'] != 'notebook':
         return
@@ -62,17 +65,19 @@ class FileContentsManager(FileManagerMixin, ContentsManager):
         except AttributeError:
             return getcwd()
 
-    save_script = Bool(False, config=True, help='DEPRECATED, use post_save_hook')
+    save_script = Bool(False, config=True, help='DEPRECATED, use post_save_hook. Will be removed in Notebook 5.0')
     def _save_script_changed(self):
-        self.log.warn("""
-        `--script` is deprecated. You can trigger nbconvert via pre- or post-save hooks:
+        self.log.warning("""
+        `--script` is deprecated and will be removed in notebook 5.0.
+
+        You can trigger nbconvert via pre- or post-save hooks:
 
             ContentsManager.pre_save_hook
             FileContentsManager.post_save_hook
 
         A post-save hook has been registered that calls:
 
-            ipython nbconvert --to script [notebook]
+            jupyter nbconvert --to script [notebook]
 
         which behaves similarly to `--script`.
         """)
@@ -248,12 +253,12 @@ class FileContentsManager(FileManagerMixin, ContentsManager):
                 try:
                     os_path = os.path.join(os_dir, name)
                 except UnicodeDecodeError as e:
-                    self.log.warn(
+                    self.log.warning(
                         "failed to decode filename '%s': %s", name, e)
                     continue
                 # skip over broken symlinks in listing
                 if not os.path.exists(os_path):
-                    self.log.warn("%s doesn't exist", os_path)
+                    self.log.warning("%s doesn't exist", os_path)
                     continue
                 elif not os.path.isfile(os_path) and not os.path.isdir(os_path):
                     self.log.debug("%s not a regular file", os_path)
@@ -456,7 +461,7 @@ class FileContentsManager(FileManagerMixin, ContentsManager):
         old_os_path = self._get_os_path(old_path)
 
         # Should we proceed with the move?
-        if os.path.exists(new_os_path):
+        if os.path.exists(new_os_path) and not same_file(old_os_path, new_os_path):
             raise web.HTTPError(409, u'File already exists: %s' % new_path)
 
         # Move the file

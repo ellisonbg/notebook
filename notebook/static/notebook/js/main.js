@@ -1,11 +1,12 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
+__webpack_public_path__ = window['staticURL'] + 'notebook/js/built/';
 
+requirejs(['contents'], function(contentsModule) {
 require([
     'base/js/namespace',
     'jquery',
     'notebook/js/notebook',
-    'contents',
     'services/config',
     'base/js/utils',
     'base/js/page',
@@ -22,47 +23,51 @@ require([
     'notebook/js/kernelselector',
     'codemirror/lib/codemirror',
     'notebook/js/about',
-    'typeahead',
-    'notebook/js/searchandreplace',
-    // only loaded, not used, please keep sure this is loaded last
-    'custom/custom'
+    'notebook/js/searchandreplace'
 ], function(
-    IPython, 
+    IPython,
     $,
-    notebook, 
-    contents,
+    notebook,
     configmod,
-    utils, 
-    page, 
+    utils,
+    page,
     events,
-    loginwidget, 
-    maintoolbar, 
-    pager, 
-    quickhelp, 
-    menubar, 
-    notificationarea, 
+    loginwidget,
+    maintoolbar,
+    pager,
+    quickhelp,
+    menubar,
+    notificationarea,
     savewidget,
     actions,
     keyboardmanager,
     kernelselector,
     CodeMirror,
     about,
-    typeahead,
-    searchandreplace,
-    // please keep sure that even if not used, this is loaded last
-    custom
+    searchandreplace
     ) {
     "use strict";
 
+    // Pull typeahead from the global jquery object
+    var typeahead = $.typeahead;
+
+    requirejs(['custom/custom'], function() {});
+
     // BEGIN HARDCODED WIDGETS HACK
-    utils.load_extension('widgets/notebook/js/extension').catch(function () {
-        console.warn('ipywidgets package not installed.  Widgets are not available.');
+    // Try to load the new extension
+    utils.load_extension('widgets/extension').catch(function () {
+    // Fallback to the ipywidgets extension
+        utils.load_extension('widgets/notebook/js/extension').catch(function () {
+            console.warn('Widgets are not available.  Please install widgetsnbextension or ipywidgets 4.0');
+        });
     });
     // END HARDCODED WIDGETS HACK
 
     // compat with old IPython, remove for IPython > 3.0
     window.CodeMirror = CodeMirror;
 
+    // Setup all of the config related things
+    
     var common_options = {
         ws_url : utils.get_body_data("wsUrl"),
         base_url : utils.get_body_data("baseUrl"),
@@ -74,19 +79,22 @@ require([
     config_section.load();
     var common_config = new configmod.ConfigSection('common', common_options);
     common_config.load();
+
+    // Instantiate the main objects
+    
     var page = new page.Page();
     var pager = new pager.Pager('div#pager', {
         events: events});
     var acts = new actions.init();
     var keyboard_manager = new keyboardmanager.KeyboardManager({
-        pager: pager, 
-        events: events, 
+        pager: pager,
+        events: events,
         actions: acts });
     var save_widget = new savewidget.SaveWidget('span#save_widget', {
-        events: events, 
+        events: events,
         keyboard_manager: keyboard_manager});
-    acts.extend_env({save_widget:save_widget})
-    var contents = new contents.Contents({
+    acts.extend_env({save_widget:save_widget});
+    var contents = new contentsModule.Contents({
           base_url: common_options.base_url,
           common_config: common_config
         });
@@ -99,27 +107,27 @@ require([
         common_options));
     var login_widget = new loginwidget.LoginWidget('span#login_widget', common_options);
     var toolbar = new maintoolbar.MainToolBar('#maintoolbar-container', {
-        notebook: notebook, 
-        events: events, 
-        actions: acts}); 
+        notebook: notebook,
+        events: events,
+        actions: acts});
     var quick_help = new quickhelp.QuickHelp({
-        keyboard_manager: keyboard_manager, 
+        keyboard_manager: keyboard_manager,
         events: events,
         notebook: notebook});
     keyboard_manager.set_notebook(notebook);
     keyboard_manager.set_quickhelp(quick_help);
     var menubar = new menubar.MenuBar('#menubar', $.extend({
-        notebook: notebook, 
+        notebook: notebook,
         contents: contents,
-        events: events, 
-        save_widget: save_widget, 
+        events: events,
+        save_widget: save_widget,
         quick_help: quick_help,
-        actions: acts}, 
+        actions: acts},
         common_options));
     var notification_area = new notificationarea.NotebookNotificationArea(
         '#notification_area', {
-        events: events, 
-        save_widget: save_widget, 
+        events: events,
+        save_widget: save_widget,
         notebook: notebook,
         keyboard_manager: keyboard_manager});
     notification_area.init_notification_widgets();
@@ -148,7 +156,7 @@ require([
         }
         notebook.set_autosave_interval(notebook.minimum_autosave_interval);
     });
-    
+
     IPython.page = page;
     IPython.notebook = notebook;
     IPython.contents = contents;
@@ -169,16 +177,18 @@ require([
     }
 
     Object.defineProperty( IPython, 'actions', {
-      get: function() { 
+      get: function() {
           console.warn('accessing "actions" on the global IPython/Jupyter is not recommended. Pass it to your objects contructors at creation time');
           return acts;
       },
       enumerable: true,
       configurable: false
     });
-
+    
+    // Now actually load nbextensions
     utils.load_extensions_from_config(config_section);
     utils.load_extensions_from_config(common_config);
     notebook.load_notebook(common_options.notebook_path);
 
+});
 });

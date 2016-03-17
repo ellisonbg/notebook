@@ -34,7 +34,6 @@ define(function(require){
         Object.seal(this);
     };
 
-    var $ = require('jquery');
     var events =  require('base/js/events');
 
     /**
@@ -212,6 +211,7 @@ define(function(require){
             }
         },
         'cut-cell' : {
+            help: 'cut selected cells',
             icon: 'fa-cut',
             help_index : 'ee',
             handler : function (env) {
@@ -221,6 +221,7 @@ define(function(require){
             }
         },
         'copy-cell' : {
+            help: 'copy selected cells',
             icon: 'fa-copy',
             help_index : 'ef',
             handler : function (env) {
@@ -228,14 +229,14 @@ define(function(require){
             }
         },
         'paste-cell-above' : {
-            help: 'paste cell above',
+            help: 'paste cells above',
             help_index : 'eg',
             handler : function (env) {
                 env.notebook.paste_cell_above();
             }
         },
         'paste-cell-below' : {
-            help: 'paste cell below',
+            help: 'paste cells below',
             icon: 'fa-paste',
             help_index : 'eh',
             handler : function (env) {
@@ -345,6 +346,7 @@ define(function(require){
             }
         },
         'move-cell-down' : {
+            help: 'move selected cells down',
             icon: 'fa-arrow-down',
             help_index : 'eb',
             handler : function (env) {
@@ -352,6 +354,7 @@ define(function(require){
             }
         },
         'move-cell-up' : {
+            help: 'move selected cells up',
             icon: 'fa-arrow-up',
             help_index : 'ea',
             handler : function (env) {
@@ -372,7 +375,7 @@ define(function(require){
             }
         },
         'delete-cell': {
-            help: 'delete selected cell',
+            help: 'delete selected cells',
             help_index : 'ej',
             handler : function (env) {
                 env.notebook.delete_cell();
@@ -545,9 +548,6 @@ define(function(require){
         'duplicate-notebook':{
             help: "Create an open a copy of current notebook",
             handler : function (env, event) {
-                if (env.notebook.dirty) {
-                    env.notebook.save_notebook({async : false});
-                }
                 env.notebook.copy_notebook();
             }
         },
@@ -685,7 +685,7 @@ define(function(require){
             data = {handler:data};
         }
         if(typeof(data.handler) !== 'function'){
-            throw('unknown datatype, cannot register');
+            throw new Error('unknown datatype, cannot register');
         }
         var _data = data;
         data = {};

@@ -1,10 +1,9 @@
 define([
-    'jquery',
     'base/js/utils',
     'base/js/dialog',
     'base/js/notificationarea',
     'moment'
-], function($, utils, dialog, notificationarea, moment) {
+], function(utils, dialog, notificationarea, moment) {
     "use strict";
     var NotificationArea = notificationarea.NotificationArea;
     
@@ -176,14 +175,15 @@ define([
                     body : msg,
                     keyboard_manager: that.keyboard_manager,
                     notebook: that.notebook,
+                    default_button: "Don't Restart",
                     buttons : {
-                        "Try restarting now": {
+                        "Don't Restart": {},
+                        "Try Restarting Now": {
                             class: "btn-danger",
                             click: function () {
                                 that.notebook.start_session();
                             }
-                        },
-                    "Don't restart": {}
+                        }
                     }
                 });
 

@@ -11,7 +11,6 @@
 
 define([
     'base/js/namespace',
-    'jquery',
     'base/js/utils',
     'base/js/keyboard',
     'services/config',
@@ -23,7 +22,6 @@ define([
     'codemirror/mode/python/python',
     'notebook/js/codemirror-ipython'
 ], function(IPython,
-    $,
     utils,
     keyboard,
     configmod,
@@ -125,11 +123,7 @@ define([
     CodeCell.options_default = {
         cm_config : {
             extraKeys: {
-                "Tab" :  "indentMore",
-                "Shift-Tab" : "indentLess",
                 "Backspace" : "delSpaceToPrevTabStop",
-                "Cmd-/" : "toggleComment",
-                "Ctrl-/" : "toggleComment"
             },
             mode: 'text',
             theme: 'ipython',

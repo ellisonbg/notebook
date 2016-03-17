@@ -102,12 +102,18 @@ def is_hidden(abs_path, abs_root=''):
         return True
     
     # check that dirs can be listed
-    # may fail on Windows junctions or non-user-readable dirs
     if os.path.isdir(abs_path):
-        try:
-            os.listdir(abs_path)
-        except OSError:
-            return True
+        if sys.platform == 'win32':
+            # can't trust os.access on Windows because it seems to always return True
+            try:
+                os.stat(abs_path)
+            except OSError:
+                # stat may fail on Windows junctions or non-user-readable dirs
+                return True
+        else:
+            # use x-access, not actual listing, in case of slow/large listings
+            if not os.access(abs_path, os.X_OK | os.R_OK):
+                return True
     
     # check UF_HIDDEN on any location up to root
     path = abs_path
@@ -134,6 +140,26 @@ def is_hidden(abs_path, abs_root=''):
                 return True
 
     return False
+
+def same_file(path, other_path):
+    """
+    Check if path and other_path are hard links to the same file. This is a
+    utility implementation of Python's os.path.samefile which is not available
+    with Python 2.x and Windows.
+
+    Parameters
+    -----------
+    path:       String representing a path to a file
+    other_path: String representing a path to another file
+
+    Returns
+    -----------
+    same:   Boolean that is True if both path and other path are the same
+    """
+    path_stat = os.stat(path)
+    other_path_stat = os.stat(other_path)
+    return (path_stat.st_ino == other_path_stat.st_ino and 
+            path_stat.st_dev == other_path_stat.st_dev)
 
 def to_os_path(path, root=''):
     """Convert an API path to a filesystem path

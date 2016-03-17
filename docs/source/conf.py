@@ -27,12 +27,15 @@ print("================")
 for item in sys.path:
     print(item)
 
-print("os.path.abspath('..')")
-print("=====================")
-print(os.path.abspath('..'))
+# add repo root to sys.path
+# here = root/docs/source
+here = os.path.abspath(os.path.dirname(__file__))
+repo_root = os.path.dirname(os.path.dirname(here))
+sys.path.insert(0, repo_root)
 
-# Insert absolute path into system path
-sys.path.insert(0, os.path.abspath('..'))
+print("repo_root")
+print("=====================")
+print(repo_root)
 
 # DEBUG for post insert on RTD
 print("DEBUG:: Post insert to sys.path")
@@ -66,6 +69,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.mathjax',
     'IPython.sphinxext.ipython_console_highlighting',
+    'sphinxcontrib.spelling',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -332,3 +336,6 @@ intersphinx_mapping = {
     'nbformat': ('http://nbformat.readthedocs.org/en/latest/', None),
     'jupyter': ('http://jupyter.readthedocs.org/en/latest/', None),
 }
+
+spelling_lang='en_US'
+spelling_word_list_filename='spelling_wordlist.txt'

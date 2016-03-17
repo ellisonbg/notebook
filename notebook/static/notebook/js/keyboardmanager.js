@@ -9,10 +9,9 @@
  */
 
 define([
-    'jquery',
     'base/js/utils',
     'base/js/keyboard',
-], function($, utils, keyboard) {
+], function(utils, keyboard) {
     "use strict";
     
     // Main keyboard manager for the notebook
@@ -79,7 +78,6 @@ define([
             'up'                  : 'jupyter-notebook:move-cursor-up',
             'down'                : 'jupyter-notebook:move-cursor-down',
             'ctrl-shift--'        : 'jupyter-notebook:split-cell-at-cursor',
-            'ctrl-shift-subtract' : 'jupyter-notebook:split-cell-at-cursor',
         };
     };
 

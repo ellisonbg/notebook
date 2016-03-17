@@ -2,13 +2,12 @@
 // Distributed under the terms of the Modified BSD License.
 
 define([
-    'jquery-ui',
     'base/js/utils',
     'base/js/security',
     'base/js/keyboard',
     'notebook/js/mathjaxutils',
     'components/marked/lib/marked',
-], function($, utils, security, keyboard, mathjaxutils, marked) {
+], function(utils, security, keyboard, mathjaxutils, marked) {
     "use strict";
 
     /**
@@ -650,8 +649,9 @@ define([
         var type = 'image/svg+xml';
         var toinsert = this.create_output_subarea(md, "output_svg", type);
 
-        // Get the svg element from within the HTML.
-        var svg = $('<div />').html(svg_html).find('svg');
+        // Get the svg element from within the HTML. 
+        // One svg is supposed, but could embed other nested svgs
+        var svg = $($('<div \>').html(svg_html).find('svg')[0]);
         var svg_area = $('<div />');
         var width = svg.attr('width');
         var height = svg.attr('height');
